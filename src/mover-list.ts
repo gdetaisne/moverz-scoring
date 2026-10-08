@@ -1,12 +1,16 @@
 import { LABEL_MIN_SCORE } from "./label.js";
 
 /**
- * Qui est proposé au client. Le client reçoit jusqu'à 10 devis fermes, en deux
- * catégories : 4 places « Confirmés », 6 places « Dynamiques ». Une place
- * qu'une catégorie ne remplit pas revient à l'autre.
+ * Qui entre dans la liste montrée au client. Le client compare jusqu'à 10 devis,
+ * prix fermes, et choisit lui-même ; la liste est classée par prix (ou par avis
+ * Google), jamais par le score. Le score FILTRE : il ne classe pas.
+ *
+ * Mécanique interne, pas une promesse : les places sont réparties en deux
+ * catégories, 4 « Confirmés » et 6 « Dynamiques ». Une place qu'une catégorie ne
+ * remplit pas revient à l'autre.
  *
  * C'est le SEUL endroit qui décide si un déménageur est Confirmé, Dynamique ou
- * absent. Une note non fiable ne classe jamais.
+ * absent. Une note non fiable n'entre jamais.
  */
 
 export type MoverListCategory = "confirme" | "dynamique";

@@ -4,7 +4,7 @@ Ce document explique **pourquoi** le score est construit ainsi. Le code dit comm
 
 ## 1. La question posée
 
-Un client qui déménage confie, en une journée, la totalité de ce qu'il possède à une entreprise qu'il ne connaît pas. Il paie souvent un acompte des semaines avant. Ce qu'il veut savoir n'est pas « ce déménageur est-il bon ? » mais :
+Un client qui déménage confie, en une journée, la totalité de ce qu'il possède à une entreprise qu'il ne connaît pas. Il réserve souvent des semaines avant le jour J. Ce qu'il veut savoir n'est pas « ce déménageur est-il bon ? » mais :
 
 1. **Mes affaires arriveront-elles entières, et toutes ?**
 2. **L'entreprise existera-t-elle encore le jour J, et a-t-elle le droit de faire ce métier ?**
@@ -62,12 +62,12 @@ Le registre n'est en revanche pas un filtre d'entrée dans la liste proposée au
 
 ## 5. Les procédures collectives
 
-Sauvegarde, redressement judiciaire, liquidation judiciaire : trois procédures ouvertes par le tribunal quand une entreprise ne peut plus (ou risque de ne plus pouvoir) payer ses dettes. Pour un client, le risque est concret : acompte perdu, déménagement non exécuté, meubles bloqués dans un garde-meubles le temps de la procédure.
+Sauvegarde, redressement judiciaire, liquidation judiciaire : trois procédures ouvertes par le tribunal quand une entreprise ne peut plus (ou risque de ne plus pouvoir) payer ses dettes. Pour un client, le risque est concret : déménagement non exécuté, meubles bloqués dans un garde-meubles le temps de la procédure.
 
 Ce que le score en fait :
 
-- au juridique, chaque décision pèse — plus si elle est récente (moins de 3 ans), plus encore si elle contient un mot grave (liquidation, redressement, sauvegarde, faillite, dissolution, condamnation) ; une décision où l'entreprise **attaque** ne compte pas : réclamer son dû n'est pas un risque ;
-- au-delà de la note, `src/company-health.ts` lit l'état de l'entreprise — cessée, radiée, procédure en cours ou passée — y compris dans les **annonces BODACC**, qui portent souvent la procédure avant qu'elle ne soit structurée dans les bases ;
+- au juridique, chaque décision pèse, plus si elle est récente (moins de 3 ans), plus encore si elle contient un mot grave (liquidation, redressement, sauvegarde, faillite, dissolution, condamnation) ; une décision où l'entreprise **attaque** ne compte pas : réclamer son dû n'est pas un risque ;
+- au-delà de la note, `src/company-health.ts` lit l'état de l'entreprise (cessée, radiée, procédure en cours ou passée), y compris dans les **annonces BODACC**, qui portent souvent la procédure avant qu'elle ne soit structurée dans les bases ;
 - une entreprise dans cet état n'est **jamais** proposée au client ni labellisée, quel que soit son score : un score élevé ne rachète pas une société en difficulté. La note indicative d'un devis externe est, elle, plafonnée à 49 (sous « Correct »).
 
 ## 6. Distinguer un avis d'un bruit
@@ -82,12 +82,23 @@ On n'appelle pas ça « faux avis » devant un client ou un déménageur : on ne
 
 Le score est une promesse faite au client. S'il manque une source critique (registre, fiche Google, avis), il n'y a **pas de note**, et l'équipe voit pourquoi. On n'affiche pas un « environ 80 » calculé sur trois axes.
 
-Deux exceptions, et seulement deux, toutes deux à 50 — la neutralité — et seulement quand la source a répondu :
+Deux exceptions, et seulement deux, toutes deux à 50 (la neutralité), et seulement quand la source a répondu :
 
 - **pas de bilan publié** : une TPE a le droit de ne pas publier ses comptes ; ce n'est pas une faute, ce n'est pas non plus une preuve de solidité. Le déménageur peut téléverser son bilan : un modèle de langage en extrait les chiffres, des contrôles stricts les valident (bonne entreprise, vrai bilan, confiance suffisante, moins de 12 mois), et c'est **la même formule** qui note. Le registre reprend la main dès qu'il publie plus récent ;
 - **fiche Google sans aucune note** : une fiche toute neuve n'est ni bonne ni mauvaise.
 
 Une fiche Google **introuvable**, elle, bloque la note : on ne note jamais un déménageur avec les avis d'un autre. D'où un rapprochement nom/localisation volontairement étroit (`src/google-matching.ts`), et un mode « sans Google » quand la fiche n'est pas prouvée comme la sienne.
+
+**Une fiche d'un autre métier bloque aussi la note (08/10/2026).** Prouver qu'une fiche appartient à l'entreprise ne prouve pas qu'elle décrit un déménageur. Deux cas réels l'ont montré : une paroisse installée à la même adresse que l'entreprise, rattachée par l'adresse ; la fiche d'un promoteur immobilier, désignée par le déménageur lui-même. Les deux recevaient une bonne note, calculée sur les avis de quelqu'un d'autre. Ce qui dit le métier d'une fiche, ce sont ses avis (`src/google-trade.ts`) :
+
+- on ne lit que les avis qui ont un vrai texte (plus de 30 caractères), sur toute la collecte (24 mois), pas sur la seule fenêtre de la réputation : le métier d'une fiche ne dépend pas de la récence de ses avis ;
+- on compte ceux qui parlent du métier (déménagement, cartons, camion, meubles, garde-meuble, débarras…) ; « immeuble » ne compte pas pour « meuble » ;
+- sur au moins 5 avis à texte, la fiche est **hors métier** sous 10 % d'avis du métier, ou sous 20 % quand le **nom** de la fiche ne dit rien du métier ;
+- alors la composante Google est retirée, et la règle stricte refuse la note globale, avec la raison écrite (« 0/30 avis parlent de déménagement »).
+
+Pourquoi deux seuils : mesuré sur les 1 259 notes fiables, un seuil unique ne sépare pas. La paroisse était à 11 % d'avis du métier, un vrai déménageur à 14 %. Le nom de la fiche, lui, les sépare. Le vocabulaire est volontairement large : un garde-meubles ou un service de débarras reste dans le métier ; les garder ou non dans la liste est une question de positionnement, pas de rattachement. Simulée sur les notes de production le 08/10/2026, la règle a désigné 18 fiches réelles : paroisse, promoteur, déchetterie, cabinet juridique, agence d'intérim, nettoyage, navettes, entrepôts logistiques.
+
+Limite connue : sous 5 avis à texte, on ne tranche pas ; une fiche d'un autre métier presque sans avis passe ce contrôle, et ne reste arrêtée que par le rapprochement nom/localisation.
 
 ## 8. Ce qu'on a changé en mesurant
 
@@ -99,6 +110,7 @@ Les règles ont bougé quand les mesures sur des fiches réelles l'ont demandé.
 - **Exception financière à 50 (avril 2026), exception Google à 50 (septembre 2026).** Des entreprises sérieuses n'avaient pas de note pour une absence qui n'était pas une faute.
 - **Accents dans le rapprochement Google (avril 2026).** « Déménagements Élysée » ne retrouvait pas « DEMENAGEMENTS ELYSEE » : des déménageurs restaient sans note. Normalisation Unicode ajoutée.
 - **Seuil de la liste (02/10/2026).** Les Dynamiques passent de « 70 et plus » à « plus de 75 », pour que le code dise exactement la promesse écrite au client : « seuls les déménageurs notés plus de 75/100 vous sont présentés ».
+- **Fiche Google hors métier (08/10/2026).** Une fiche rattachée dont les avis ne parlent pas de déménagement ne note plus le déménageur (§ 7).
 - **Coût du registre.** Ne demander que le champ utile a divisé par trois à quatre le coût d'un appel ; une fiche de moins de 120 jours n'est plus rachetée.
 
 ## 9. Trois défauts trouvés, et corrigés
@@ -119,14 +131,14 @@ On retient celle qui **coûte le plus de points**, `poids × (100 − composante
 
 C'est une attribution, pas une cause, et on mesure sa portée : l'écart avec le deuxième motif. Sous 3 points, aucune raison n'explique la note à elle seule, et on le dit plutôt que de désigner un coupable (`src/motif.ts`).
 
-## 11. Du score à la sélection
+## 11. Du score à la liste
 
-Le client reçoit jusqu'à 10 devis fermes :
+Le client compare jusqu'à 10 devis, prix fermes, et **choisit lui-même** son déménageur. La liste est classée par prix, ou par avis Google : le score ne la classe pas, il décide qui peut y entrer.
 
-- **4 places « Confirmés »** : note fiable ≥ 85, le seuil du label Excellent ;
-- **6 places « Dynamiques »** : note fiable strictement supérieure à 75 ;
-- une place qu'une catégorie ne remplit pas revient à l'autre ;
+- entrent seulement les notes **fiables** de **plus de 75/100** ; une note de 75 n'entre pas ;
 - avant toute note : jamais une entreprise fermée, cessée, radiée ou en procédure collective ;
 - jamais une note non fiable ; jamais le libellé « Correct » ou « Fragile » sous les yeux du client.
+
+Mécanique interne du code, qui n'est pas une promesse faite au client : les places de la liste sont réparties en deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84) ; une place qu'une catégorie ne remplit pas revient à l'autre (`src/mover-list.ts`).
 
 Le label Excellent demande en plus : être au registre des transporteurs, et être joignable.

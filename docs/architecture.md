@@ -24,6 +24,7 @@ Algorithme : `legacy-compatible-v1`, inscrit sur chaque calcul et chaque ligne d
                      │   ├─ fenêtre 12/24 mois      src/review-window.ts │
                      │   ├─ réputation, vigilance   src/reputation.ts    │
                      │   ├─ SITR, Sirene → juridique src/sitr-juridical.ts│
+                     │   ├─ fiche hors métier ?     src/google-trade.ts  │
                      │   ├─ exceptions à 50         src/formulas.ts      │
                      │   └─ buildStrictGlobalScore  src/formulas.ts      │
                      └────────┬─────────────────────────────────────────┘
@@ -45,6 +46,7 @@ Tout ce qui touche le réseau est derrière trois ports (`src/ports.ts`). Contra
 2. Si l'une manque, `globalScore = null`, `isReliable = false`, et `reliabilityError` liste les sources en défaut et les composantes manquantes.
 3. Les sous-scores disponibles sont conservés pour l'audit, mais ne recomposent **jamais** une note partielle.
 4. Deux exceptions, à 50, seulement si la source a répondu : pas de bilan publié (financier), fiche sans aucune note (Google).
+4 bis. Une fiche Google **hors métier** (moins de 10 % d'avis qui parlent de déménagement, 20 % si son nom n'en dit rien, sur au moins 5 avis à texte) perd sa composante Google : pas de note globale, et la raison est écrite (`src/google-trade.ts`, depuis le 08/10/2026). Le contrôle lit toute la collecte d'avis, pas la fenêtre de la réputation.
 5. Une note non fiable ne classe jamais un déménageur dans la liste et ne donne jamais de label.
 
 À l'inverse, la note *indicative* d'un devis externe (`src/indicative-score.ts`) renormalise sur les axes disponibles : c'est un autre usage, avec un autre nom, et jamais présenté comme le score Moverz.
@@ -56,21 +58,28 @@ Tout ce qui touche le réseau est derrière trois ports (`src/ports.ts`). Contra
 - **Pas de doublon** : un calcul déjà `PENDING` ou `RUNNING` pour un déménageur n'en crée pas un second.
 - **Jobs orphelins** : un calcul dure 30 à 60 s ; « en cours » depuis plus de 10 minutes, il a été interrompu (redémarrage) et compte comme un échec, qu'un geste de l'équipe peut clore et relancer (`src/score-watch.ts`).
 - Le worker ne tourne que sur les instances de production : un poste de développement ne doit jamais réclamer les jobs de la base réelle.
-- Planificateur : recalcul mensuel des déménageurs labellisés ou partenaires dont la note a plus de 30 jours.
+- Planificateur : recalcul mensuel des déménageurs labellisés ou inscrits dont la note a plus de 30 jours.
 
 ## Coûts et caches
 
-- **Pappers est payant** : on ne demande que le champ supplémentaire utile (`decisions`) — ~3 crédits au lieu de ~11 — et une fiche de moins de **120 jours** n'est pas rachetée. L'âge se compte depuis l'appel payé, pas depuis le dernier calcul qui l'a recyclée. Une panne (401, 429, 5xx, réseau) ne remplace jamais une fiche déjà payée (`src/pappers-cache.ts`).
-- **Avis** : cache de 7 jours, versionné ; le passage de 12 à 24 mois de collecte a invalidé les anciens caches par leur numéro de version.
+- **Pappers est payant** : on ne demande que le champ supplémentaire utile (`decisions`), soit ~3 crédits au lieu de ~11, et une fiche de moins de **120 jours** n'est pas rachetée. L'âge se compte depuis l'appel payé, pas depuis le dernier calcul qui l'a recyclée. Une panne (401, 429, 5xx, réseau) ne remplace jamais une fiche déjà payée (`src/pappers-cache.ts`).
+- **Avis** : cache de 7 jours, versionné ; en production, les avis d'une ancienne fiche Google figée de la même entreprise (fiche fermée après un déménagement de local) s'ajoutent à la collecte de la fiche vivante, avant la fenêtre 12/24 mois et le contrôle du métier : ici, c'est au `ReviewsProvider` de les rendre ; le passage de 12 à 24 mois de collecte a invalidé les anciens caches par leur numéro de version.
 - **Modèles de langage** : optionnels. La vigilance et les thèmes d'avis ont une méthode déterministe par mots-clés ; un modèle (OpenAI, repli Claude) ne fait que la remplacer quand il répond une réponse lisible, relue champ par champ (`src/llm/client.ts`, `categoriesFromLlmAnswer`). Prix publics et estimation de coût dans `src/review-themes.ts`.
 
 ## Données conservées
 
 - Score courant (une ligne par déménageur) et historique complet (une ligne par calcul, jamais réécrite).
 - Les instantanés bruts des fournisseurs sont gardés avec chaque calcul : une note se ré-explique des mois plus tard, composante par composante.
-- Leçon apprise : les composantes d'un score doivent être écrites dans la même passe que le score. Les recoller après coup depuis l'historique a déjà produit des explications fausses ; depuis, une composante introuvable est effacée plutôt que devinée — une case vide se lit, un chiffre pris ailleurs se croit.
+- Leçon apprise : les composantes d'un score doivent être écrites dans la même passe que le score. Les recoller après coup depuis l'historique a déjà produit des explications fausses ; depuis, une composante introuvable est effacée plutôt que devinée : une case vide se lit, un chiffre pris ailleurs se croit.
 
 ## Limites connues
 
 - Un seul calcul à la fois par instance (suffisant au volume actuel ; pool concurrent prévu, le claim atomique restant valable).
-- L'heuristique de vigilance est volontairement pessimiste (sous-chaînes, « Autres » compte toute préoccupation) ; voir le commentaire de `buildHeuristicVigilance` dans `src/reputation.ts`.
+- L'heuristique de vigilance par mots-clés produit l'essentiel des notes de production (1 182 notes fiables sur 1 188 au 08/10/2026). Elle reste prudente : un avis de 4★ qui contient un mot-clé compte comme incident. Ses deux défauts de lecture (sous-chaînes, « Autres problèmes » qui comptait tous les avis de 4★ ou moins) sont corrigés depuis le 08/10/2026 : voir `buildHeuristicVigilance` dans `src/reputation.ts` et `docs/METIER.md` § 9.
+- Contrôle du métier de la fiche : sous 5 avis à texte, on ne tranche pas. Il compte des racines de mots, sans modèle de langage : un avis qui raconte un déménagement sans aucun des mots de la liste ne compte pas pour le métier (d'où des seuils bas, 10 et 20 %).
+
+## Tenue à jour
+
+Ce dépôt suit le code de production. Toute modification du système de scoring dans le monorepo met à jour ce dépôt (code, tests, documentation) dans la même tâche. Un test du monorepo garde, pour chaque fichier de règles couvert, son empreinte et le commit public correspondant : modifier une règle sans mettre à jour ce dépôt le fait échouer.
+
+Les écarts voulus avec la production sont des adaptations, pas des différences de règles : ports à la place des appels HTTP et de la base, modèles de langage injectés (`src/llm/client.ts`), date de référence passée en paramètre (`now`) pour que les tests soient déterministes, et filtres opérationnels de la liste (déménageurs de test, couverture géographique, dépublication) laissés hors du cœur.
