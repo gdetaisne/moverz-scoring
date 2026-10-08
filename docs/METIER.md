@@ -139,6 +139,6 @@ Le client compare jusqu'à 10 devis, prix fermes, et **choisit lui-même** son d
 - avant toute note : jamais une entreprise fermée, cessée, radiée ou en procédure collective ;
 - jamais une note non fiable ; jamais le libellé « Correct » ou « Fragile » sous les yeux du client.
 
-Mécanique interne du code, qui n'est pas une promesse faite au client : les places de la liste sont réparties en deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84) ; une place qu'une catégorie ne remplit pas revient à l'autre (`src/mover-list.ts`).
+Mécanique interne du code, qui n'est pas une promesse faite au client : les places de la liste sont réparties en deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84) ; une place qu'une catégorie ne remplit pas revient à l'autre (`src/mover-list.ts`). Quand un département compte plus de déménageurs éligibles que de places, les déménageurs sous contrat avec Moverz passent d'abord, puis la note départage ; l'ordre affiché au client, lui, reste celui du prix ou des avis Google.
 
 Le label Excellent demande en plus : être au registre des transporteurs, et être joignable.

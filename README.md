@@ -45,7 +45,7 @@ Libellés : Excellent ≥ 85 · Bon ≥ 70 · Correct ≥ 50 · Fragile ≥ 30 �
 
 - Le client choisit. La liste est classée par prix (du moins cher au plus cher), ou par avis Google : jamais par le score.
 - Le score filtre : n'entrent que les déménageurs à la note **fiable** de **plus de 75/100** (une note de 75 n'entre pas), dont l'entreprise est saine (ni cessée, ni radiée, ni en procédure collective).
-- Mécanique interne du code, qui n'est pas une promesse faite au client : les places sont réparties en deux catégories, 4 « Confirmés » (note de 85 et plus) et 6 « Dynamiques » (de 76 à 84) ; une place non remplie revient à l'autre catégorie ([`src/mover-list.ts`](src/mover-list.ts)).
+- Mécanique interne du code, qui n'est pas une promesse faite au client : les places sont réparties en deux catégories, 4 « Confirmés » (note de 85 et plus) et 6 « Dynamiques » (de 76 à 84) ; une place non remplie revient à l'autre catégorie ([`src/mover-list.ts`](src/mover-list.ts)). Quand un département compte plus de déménageurs éligibles que de places, les déménageurs sous contrat avec Moverz passent d'abord, puis la note départage : c'est le seul endroit où le score ordonne, et il ne décide pas de l'ordre affiché au client.
 
 ## Lancer
 
