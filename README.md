@@ -4,6 +4,8 @@
 
 Ce dépôt publie le **cœur de ce score**, avec ses vrais poids et ses vrais seuils : les clients et les déménageurs doivent pouvoir vérifier comment ils sont notés.
 
+La méthode expliquée aux particuliers, avec les chiffres de la sélection : [moverz.fr/chiffres-cles/selection-des-demenageurs](https://moverz.fr/chiffres-cles/selection-des-demenageurs/). Les déménageurs retenus, avec leur note : [l'annuaire Moverz](https://moverz.fr/annuaire/).
+
 ## Ce que ce dépôt montre
 
 **1. Des sources variées, chacune lue pour ce qu'elle dit.**
