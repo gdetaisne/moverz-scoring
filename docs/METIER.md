@@ -22,7 +22,7 @@ Un déménageur fiable, au sens de Moverz, est celui qui répond oui aux trois. 
 | Financier | 12,5 % | Rentabilité, fonds propres, trésorerie, endettement, tendance | Bilans publiés (Pappers) |
 | Juridique | 12,5 % | Contentieux, procédures, licence de transport | Pappers, registre des transporteurs, Sirene |
 
-**Pourquoi la vigilance pèse le plus.** Les avis sont le seul endroit où l'on voit ce qui s'est passé *pendant* des déménagements réels. La note moyenne Google dit si les clients sont contents ; la vigilance dit *de quoi* ceux qui ne le sont pas se plaignent. Un 4,6/5 avec trois récits de meubles cassés n'est pas un 4,6/5 avec trois récits de retard.
+**Pourquoi la vigilance pèse le plus.** Les avis sont la seule source qui raconte ce qui s'est passé *pendant* des déménagements réels. La note Google dit si les clients sont contents ; la vigilance dit *de quoi* se plaignent ceux qui ne le sont pas. Un 4,6/5 avec trois récits de meubles cassés ne vaut pas un 4,6/5 avec trois récits de retard.
 
 **Pourquoi le financier et le juridique pèsent peu dans la somme… et beaucoup ailleurs.** Ce sont des signaux lents, et beaucoup de petites entreprises ne publient pas leurs comptes. Leur poids dans la moyenne est donc modéré. Mais leurs cas graves ne passent pas par la moyenne : ils sont **éliminatoires** (§ 4 et § 5). Une entreprise en redressement judiciaire ne doit pas pouvoir « compenser » par de bons avis.
 
@@ -41,13 +41,13 @@ Dans la vigilance, six catégories, deux poids :
 | Personnel désagréable | 10 % |
 | Autres problèmes | 10 % |
 
-Un retard se rattrape, un supplément se conteste, un déménageur désagréable s'oublie. Un buffet de famille cassé ou un carton de bijoux disparu, non. Le client peut émettre des réserves à la livraison et les confirmer dans un délai court, mais l'indemnisation dépend de la valeur déclarée, des preuves, et de la bonne volonté de l'entreprise : en pratique, le préjudice reste souvent à sa charge. Ce sont les deux incidents **irréversibles**, d'où trois fois le poids des autres.
+Un retard se rattrape, un supplément se conteste, un déménageur désagréable s'oublie. Un buffet de famille cassé ou un carton de bijoux disparu, non. Ce sont les deux incidents **irréversibles**, d'où trois fois le poids des autres.
 
 Les seuils sont des **proportions**, pas des comptes : moins de 1 % des avis authentiques = 100, de 1 à 3 % = 50, au-delà = 0. Une entreprise qui fait 400 déménagements par an n'est pas punie d'avoir plus d'avis qu'un artisan qui en fait 30.
 
 ## 4. Le registre des transporteurs
 
-Transporter les biens d'un client, c'est du transport routier de marchandises pour compte d'autrui. Il faut être inscrit au **registre électronique national des entreprises de transport par route** (tenu par les services de l'État en région, listes publiées par le ministère deux fois par semaine), ce qui suppose capacité professionnelle, capacité financière et honorabilité. L'inscription donne une **licence** :
+Transporter les biens d'un client, c'est du transport routier de marchandises pour compte d'autrui. Il faut être inscrit au **registre électronique national des entreprises de transport par route** (tenu par les services de l'État en région), ce qui suppose capacité professionnelle, capacité financière et honorabilité. L'inscription donne une **licence** :
 
 - **LTI**, licence de transport intérieur, pour les entreprises qui n'utilisent que des véhicules de 3,5 t et moins ;
 - **LC**, licence communautaire, au-delà de 3,5 t (et pour certains utilitaires légers à l'international).
@@ -101,7 +101,15 @@ Les règles ont bougé quand les mesures sur des fiches réelles l'ont demandé.
 - **Seuil de la liste (02/10/2026).** Les Dynamiques passent de « 70 et plus » à « plus de 75 », pour que le code dise exactement la promesse écrite au client : « seuls les déménageurs notés plus de 75/100 vous sont présentés ».
 - **Coût du registre.** Ne demander que le champ utile a divisé par trois à quatre le coût d'un appel ; une fiche de moins de 120 jours n'est plus rachetée.
 
-## 9. Le motif principal
+## 9. Limites connues
+
+Un score honnête dit aussi où il se trompe. En préparant ce dépôt, trois défauts sont apparus dans la lecture des avis **sans modèle de langage** (le mode par mots-clés). Ils sont conservés ici tels quels, pour que le code publié soit celui qui tourne, et sont en cours de correction dans le produit :
+
+- le mot-clé « vol » attrape aussi « volume » : la catégorie vol peut être gonflée ;
+- la catégorie « Autres problèmes » compte tous les avis de 4★ ou moins, même élogieux ;
+- une décision « Procédure collective en cours » sans mot grave ne coûte que la pénalité de base au juridique. Sans effet sur la sélection : l'entreprise reste exclue par son état (§ 5).
+
+## 10. Le motif principal
 
 « Pourquoi ma note est-elle basse ? » est la première question d'un déménageur. Il n'y a pas de réponse unique : cinq composantes tirent ensemble.
 
@@ -109,7 +117,7 @@ On retient celle qui **coûte le plus de points**, `poids × (100 − composante
 
 C'est une attribution, pas une cause, et on mesure sa portée : l'écart avec le deuxième motif. Sous 3 points, aucune raison n'explique la note à elle seule, et on le dit plutôt que de désigner un coupable (`src/motif.ts`).
 
-## 10. Du score à la sélection
+## 11. Du score à la sélection
 
 Le client reçoit jusqu'à 10 devis fermes :
 
