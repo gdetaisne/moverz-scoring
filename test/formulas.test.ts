@@ -148,3 +148,17 @@ describe("axe Google", () => {
     assert.equal(computeLegacyGoogleScore(null, 0, "OPERATIONAL"), null);
   });
 });
+
+describe("juridique : mots graves (corrigé le 08/10/2026)", () => {
+  const recent = new Date().toISOString();
+  it("la procédure collective signalée par le registre est une décision grave", () => {
+    assert.equal(computeLegacyJuridicalScore([{ dispositif: "Procédure collective en cours", date: recent }]), 60);
+  });
+  it("les mots graves sont reconnus sans accent ni casse", () => {
+    assert.equal(computeLegacyJuridicalScore([{ dispositif: "PROCEDURE COLLECTIVE ouverte", date: recent }]), 60);
+    assert.equal(computeLegacyJuridicalScore([{ dispositif: "Jugement de Liquidation judiciaire", date: recent }]), 60);
+  });
+  it("une décision ordinaire ne prend que le malus de base", () => {
+    assert.equal(computeLegacyJuridicalScore([{ dispositif: "Injonction de payer", date: recent }]), 75);
+  });
+});

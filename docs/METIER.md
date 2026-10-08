@@ -101,13 +101,15 @@ Les règles ont bougé quand les mesures sur des fiches réelles l'ont demandé.
 - **Seuil de la liste (02/10/2026).** Les Dynamiques passent de « 70 et plus » à « plus de 75 », pour que le code dise exactement la promesse écrite au client : « seuls les déménageurs notés plus de 75/100 vous sont présentés ».
 - **Coût du registre.** Ne demander que le champ utile a divisé par trois à quatre le coût d'un appel ; une fiche de moins de 120 jours n'est plus rachetée.
 
-## 9. Limites connues
+## 9. Trois défauts trouvés, et corrigés
 
-Un score honnête dit aussi où il se trompe. En préparant ce dépôt, trois défauts sont apparus dans la lecture des avis **sans modèle de langage** (le mode par mots-clés). Ils sont conservés ici tels quels, pour que le code publié soit celui qui tourne, et sont en cours de correction dans le produit :
+Un score honnête dit aussi où il s'est trompé. En préparant ce dépôt, trois défauts sont apparus dans la lecture des avis **sans modèle de langage** (le mode par mots-clés, qui produit l'essentiel des notes en production). Ils ont été corrigés le 8 octobre 2026, dans le produit comme ici :
 
-- le mot-clé « vol » attrape aussi « volume » : la catégorie vol peut être gonflée ;
-- la catégorie « Autres problèmes » compte tous les avis de 4★ ou moins, même élogieux ;
-- une décision « Procédure collective en cours » sans mot grave ne coûte que la pénalité de base au juridique. Sans effet sur la sélection : l'entreprise reste exclue par son état (§ 5).
+- le mot-clé « vol » attrapait aussi « volume » : les mots-clés se cherchent désormais comme mots entiers, accents et casse ignorés, accords tolérés ;
+- la catégorie « Autres problèmes » comptait tous les avis de 4★ ou moins, même élogieux : elle ne compte plus que les avis négatifs (3★ ou moins) qu'aucune autre catégorie n'a retenus ;
+- une décision « Procédure collective en cours » ne prenait pas le malus de gravité au juridique : c'est désormais un mot grave. Sans effet sur la sélection : l'entreprise restait exclue par son état (§ 5).
+
+Mesuré avant correction, sur les notes réelles : 368 notes changent, et 49 déménageurs pénalisés à tort repassent au-dessus du seuil de 75. Le recalcul repart des avis déjà collectés, sans nouvel appel aux sources.
 
 ## 10. Le motif principal
 

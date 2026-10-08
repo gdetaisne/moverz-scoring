@@ -99,9 +99,9 @@ describe("avec les ports (données de démonstration)", () => {
   };
 
   it("les quatre cas de démonstration donnent le résultat documenté dans le README", async () => {
-    assert.equal((await run("demo-confirme")).globalScore, 88);
+    assert.equal((await run("demo-confirme")).globalScore, 92);
     const dyn = await run("demo-dynamique");
-    assert.equal(dyn.globalScore, 79);
+    assert.equal(dyn.globalScore, 83);
     assert.equal(dyn.reputation.windowMonths, 24);
     assert.equal(dyn.details.financialFallbackApplied, true);
     const fragile = await run("demo-fragile");

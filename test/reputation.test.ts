@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { completeJsonWithFallback, type LlmClient } from "../src/llm/client.js";
 import {
+  buildHeuristicVigilance,
   categoriesFromLlmAnswer,
   categoryScore,
   deriveReputationSnapshot,
@@ -99,8 +100,8 @@ describe("vigilance", () => {
     const casse = v.categories.find((c) => c.id === "casse_degradation");
     assert.equal(casse?.score, 0);
     assert.equal(v.method, "keywords");
-    // casse 0 × 0,3 et « autres » 0 × 0,1 : 100 − 30 − 10
-    assert.equal(v.vigilanceScore, 60);
+    // casse 0 × 0,3 ; l'avis est déjà classé, il ne compte pas aussi dans « autres » : 100 − 30
+    assert.equal(v.vigilanceScore, 70);
   });
 
   it("sans avis négatif : 100", async () => {
@@ -151,5 +152,60 @@ describe("repli entre modèles", () => {
     assert.equal(result?.provider, "anthropic");
     assert.equal(silent.calls, 1);
     assert.equal(await completeJsonWithFallback([], "consigne"), null);
+  });
+});
+
+// --- Correctif du 08/10/2026 : vigilance heuristique, sans modèle --------------------------
+
+describe("vigilance heuristique (corrigée le 08/10/2026)", () => {
+  const avis = (rating: number, text: string, author = `auteur-${Math.random()}`) => ({
+    author,
+    rating,
+    text,
+    relativeTime: "il y a 1 mois",
+  });
+  /** 99 avis 5★ neutres : un avis compté dans une catégorie = 1 % = « warning ». */
+  const base = () =>
+    Array.from({ length: 99 }, (_, i) =>
+      avis(5, `Equipe ponctuelle et soigneuse, tout s'est tres bien passe du debut a la fin numero ${i}.`, `b${i}`),
+    );
+  const categorie = (id: string, reviews: ReturnType<typeof avis>[]) =>
+    buildHeuristicVigilance(reviews).find((c) => c.id === id)!;
+
+  it("un avis 4★ élogieux n'est pas un « autre problème »", () => {
+    const r = [...base(), avis(4, "Tres bonne equipe, efficace et sympathique, je recommande sans hesiter a mes proches.")];
+    assert.equal(categorie("autres", r).reviewCount, 0);
+    assert.equal(categorie("autres", r).score, 100);
+  });
+
+  it("un avis négatif sans mot-clé reste un « autre problème »", () => {
+    const r = [...base(), avis(2, "Experience decevante, je ne referai pas appel a cette entreprise pour mon prochain projet.")];
+    assert.equal(categorie("autres", r).reviewCount, 1);
+  });
+
+  it("un avis négatif déjà classé n'est pas compté deux fois", () => {
+    const r = [...base(), avis(1, "Ils ont casse ma table et la commode, aucune excuse ni dedommagement propose depuis.")];
+    assert.equal(categorie("casse_degradation", r).reviewCount, 1);
+    assert.equal(categorie("autres", r).reviewCount, 0);
+  });
+
+  it("« volume » n'est pas un vol", () => {
+    const r = [
+      ...base(),
+      avis(4, "Le volume avait ete mal estime au depart mais l'equipe a su s'adapter rapidement."),
+      avis(3, "Volumineux meubles demontes avec soin, un peu long mais correct dans l'ensemble au final."),
+    ];
+    assert.equal(categorie("vol", r).reviewCount, 0);
+  });
+
+  it("le vol est reconnu avec ou sans accent, au pluriel ou au féminin", () => {
+    const r = [
+      ...base(),
+      avis(1, "Vol de bijoux pendant le demenagement, plainte deposee, aucune reponse de leur part."),
+      avis(2, "Plusieurs objets voles dans les cartons, nous sommes tres decus de cette prestation."),
+      avis(1, "Ma montre a ete volée et un carton est porté disparu depuis le jour du déménagement."),
+      avis(2, "Des affaires DÉROBÉES dans le camion, je déconseille fortement cette entreprise à tous."),
+    ];
+    assert.equal(categorie("vol", r).reviewCount, 4);
   });
 });

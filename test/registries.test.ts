@@ -41,12 +41,12 @@ describe("Pappers — lecture de la réponse", () => {
     assert.equal(snap.juridicalScore, 100);
   });
 
-  it("une procédure collective en cours devient une décision récente : −25", () => {
-    // Le libellé synthétique ne contient aucun mot grave : le malus reste celui d'une décision
-    // récente. L'exclusion forte de ces entreprises passe par `company-health.ts`, pas par la note.
+  it("une procédure collective en cours devient une décision récente et grave : −25 −15", () => {
+    // Corrigé le 08/10/2026 : « procédure collective » fait partie des mots graves. L'exclusion
+    // forte de ces entreprises passe toujours par `company-health.ts`, pas par la note.
     const raw = { procedure_collective_en_cours: true, procedures_collectives: [{ date_debut: "2026-05-12" }], decisions: [] };
     assert.equal(buildPappersDecisions(raw, NOW)[0].dispositif, "Procédure collective en cours");
-    assert.equal(buildPappersSnapshot(raw, { now: NOW }).juridicalScore, 75);
+    assert.equal(buildPappersSnapshot(raw, { now: NOW }).juridicalScore, 60);
   });
 });
 

@@ -187,25 +187,53 @@ Réponds UNIQUEMENT en JSON:
 }`;
 }
 
+/** Minuscules, sans accents : « Volée » et « volee » se lisent pareil. */
+function foldText(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
 /**
- * L'heuristique de repli, volontairement pessimiste :
- *  - « préoccupation » = tout avis de 4★ ou moins (un 4★ qui dit « un meuble
- *    rayé » compte) ;
- *  - « Autres problèmes » n'a pas de mots-clés : elle compte TOUTES les
- *    préoccupations, y compris des 4★ élogieux ;
- *  - les mots-clés sont des sous-chaînes : « vol » attrape aussi « volume ».
- * Ce sont des limites connues, assumées : sans modèle, mieux vaut une
- * vigilance trop sévère qu'un incident manqué. Dès qu'un modèle répond, sa
- * classification remplace cette heuristique.
+ * Un mot-clé se cherche comme MOT, pas comme bout de mot : « vol » ne doit pas
+ * trouver « volume » ni « volontiers ». Accents ignorés, accords tolérés
+ * (« cassé » trouve « cassées », « vol » trouve « vols » et « volé »).
  */
-function buildHeuristicVigilance(authentic: GoogleReview[]): VigilanceCategoryResult[] {
+function keywordPattern(keyword: string): RegExp {
+  const escaped = foldText(keyword).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:e|s|es)?(?![\\p{L}\\p{N}])`, "u");
+}
+
+const CATEGORY_PATTERNS = new Map(
+  VIGILANCE_CATEGORIES.map((category) => [category.id, category.keywords.map(keywordPattern)]),
+);
+
+/**
+ * L'heuristique de repli, quand aucun modèle ne répond :
+ *  - les catégories à mots-clés lisent les avis de 4★ ou moins (un 4★ qui dit
+ *    « un meuble rayé » compte) ;
+ *  - « Autres problèmes » ne compte que les avis négatifs (3★ ou moins, même
+ *    seuil que la réputation) qu'aucune autre catégorie n'a retenus.
+ * Corrigé le 08/10/2026 : avant, « Autres problèmes » comptait tous les avis de
+ * 4★ ou moins, élogieux compris, et les mots-clés étaient des sous-chaînes
+ * (« vol » attrapait « volume »). Mesuré en production : 49 déménageurs étaient
+ * pénalisés à tort sous le seuil de 75.
+ */
+export function buildHeuristicVigilance(authentic: GoogleReview[]): VigilanceCategoryResult[] {
   const concerns = authentic.filter((review) => (review.rating ?? 0) <= 4);
+  const folded = new Map(concerns.map((review) => [review, foldText(review.text)]));
+  const matchedByKeyword = new Set<GoogleReview>();
+  const keywordMatches = new Map<string, GoogleReview[]>();
+  for (const category of VIGILANCE_CATEGORIES) {
+    const patterns = CATEGORY_PATTERNS.get(category.id) ?? [];
+    if (patterns.length === 0) continue;
+    const matched = concerns.filter((review) => patterns.some((pattern) => pattern.test(folded.get(review) ?? "")));
+    matched.forEach((review) => matchedByKeyword.add(review));
+    keywordMatches.set(category.id, matched);
+  }
+
   return VIGILANCE_CATEGORIES.map((category) => {
-    const matched = category.keywords.length
-      ? concerns.filter((review) =>
-          category.keywords.some((keyword) => review.text.toLowerCase().includes(keyword.toLowerCase())),
-        )
-      : concerns;
+    const matched =
+      keywordMatches.get(category.id) ??
+      concerns.filter((review) => (review.rating ?? 0) <= 3 && !matchedByKeyword.has(review));
     const uniqueMatched = Array.from(
       new Map(matched.map((review) => [`${review.author}|${review.text.slice(0, 60)}`, review])).values(),
     );

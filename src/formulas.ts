@@ -195,7 +195,12 @@ export function computeLegacyFinancialScore(finances: Array<Record<string, unkno
   return clamp(score);
 }
 
+// Sans accents : le texte est replié avant comparaison (« Procédure » = « procedure »).
+// « procedure collective » couvre la décision synthétique posée quand le registre
+// signale une procédure en cours (corrigé le 08/10/2026 : elle ne prenait pas le
+// malus de gravité).
 const GRAVE_KEYWORDS = [
+  "procedure collective",
   "liquidation",
   "condamnation",
   "redressement",
@@ -206,7 +211,7 @@ const GRAVE_KEYWORDS = [
 
 function isGraveDecision(dispositif: unknown) {
   if (typeof dispositif !== "string") return false;
-  const lower = dispositif.toLowerCase();
+  const lower = dispositif.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
   return GRAVE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 

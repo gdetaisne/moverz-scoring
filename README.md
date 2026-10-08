@@ -57,14 +57,14 @@ La démo note quatre déménageurs **fictifs** ([`fixtures/`](fixtures/)) sans r
 
 | Cas | Note | Ce qu'il montre |
 |---|---|---|
-| Déménagements Exemple | 88, Excellent | Proposé en « Confirmés » ; 2 avis écartés ; motif principal : vigilance |
-| Transports Modèle | 79, Bon | Pas de bilan publié → financier 50 ; peu d'avis récents → fenêtre 24 mois ; « Dynamiques » |
-| Déménagement Fragile | 49, Fragile | Licence périmée → juridique 0 ; procédure collective → jamais proposé |
+| Déménagements Exemple | 92, Excellent | Proposé en « Confirmés » ; 2 avis écartés ; motif principal : vigilance |
+| Transports Modèle | 83, Bon | Pas de bilan publié → financier 50 ; peu d'avis récents → fenêtre 24 mois ; « Dynamiques » |
+| Déménagement Fragile | 58, Correct | Licence périmée → juridique 0 ; procédure collective → jamais proposé |
 | Déménageurs Introuvables | aucune | Pas de fiche Google rattachable → pas de note globale, et la raison |
 
 ## Chiffres
 
-**Ce dépôt** : 24 modules TypeScript (3 078 lignes dont ~2 250 de code hors commentaires), 123 tests (`node:test`, 13 fichiers), une seule dépendance d'exécution (`zod`).
+**Ce dépôt** : 24 modules TypeScript (2 810 lignes non vides), 131 tests (`node:test`, 13 fichiers), une seule dépendance d'exécution (`zod`).
 
 **Le monorepo privé dont il est extrait** (non publié) : 2 505 commits d'avril à octobre 2026, 474 fichiers de tests ; applications API, tunnel client, portail déménageur, back-office. Ce qui n'est pas ici : moteur de prix, base de données, appels HTTP aux fournisseurs, interfaces.
 
