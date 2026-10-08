@@ -1,0 +1,177 @@
+{
+  "description": "TPE sans bilan publié (exception financière à 50), peu d'avis récents (fenêtre élargie à 24 mois) : cas « Dynamique ».",
+  "asOf": "2026-10-01",
+  "mover": {
+    "id": "demo-dynamique",
+    "companyName": "Transports Modèle",
+    "siren": "987654321",
+    "siret": "98765432100015",
+    "city": "Rennes",
+    "postalCode": "35000",
+    "googlePlaceId": null
+  },
+  "registry": {
+    "pappers": {
+      "httpStatus": 200,
+      "raw": {
+        "siren": "987654321",
+        "nom_entreprise": "TRANSPORTS MODELE",
+        "entreprise_cessee": false,
+        "statut_rcs": "Inscrit",
+        "procedure_collective_en_cours": false,
+        "finances": [],
+        "decisions": []
+      }
+    },
+    "transportRegister": {
+      "source": "sitr",
+      "situationAu": "2026-09-28",
+      "ingestedAt": "2026-09-29T06:00:00.000Z",
+      "matched": true,
+      "matchKind": "siren_siege",
+      "siren": "987654321",
+      "noSiren": false,
+      "inMarchandises": true,
+      "inCommissionnaires": false,
+      "etablissementsCount": 1,
+      "marchandises": {
+        "siret": "98765432100015",
+        "raisonSociale": "(fictif)",
+        "postalCode": "35000",
+        "commune": "RENNES",
+        "siege": true,
+        "ltiNumero": "2021 00 0001",
+        "ltiDebut": "2021-01-01",
+        "ltiFin": "2029-06-30",
+        "ltiCopies": 3,
+        "lcNumero": null,
+        "lcDebut": null,
+        "lcFin": null,
+        "lcCopies": 0,
+        "lcVulCopies": 0
+      },
+      "commissionnaireSiret": null
+    },
+    "sireneClosed": false
+  },
+  "google": {
+    "placeId": "demo-place-modele",
+    "rating": 4.9,
+    "ratingCount": 17,
+    "businessStatus": "OPERATIONAL"
+  },
+  "reviews": [
+    {
+      "author": "Chloé C.",
+      "rating": 5,
+      "text": "Équipe ponctuelle et très soigneuse, nos meubles sont arrivés intacts, je recommande sans hésiter.",
+      "relativeTime": "il y a 2 semaines",
+      "isoDate": "2026-09-11T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé D.",
+      "rating": 5,
+      "text": "Déménagement parfaitement organisé du début à la fin, devis respecté et aucune mauvaise surprise le jour J.",
+      "relativeTime": "il y a 1 mois",
+      "isoDate": "2026-08-04T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé E.",
+      "rating": 5,
+      "text": "Trois déménageurs efficaces et sympathiques, tout était emballé avec soin et remonté proprement chez nous.",
+      "relativeTime": "il y a 3 mois",
+      "isoDate": "2026-06-26T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé F.",
+      "rating": 5,
+      "text": "Très bon rapport qualité-prix, interlocuteur réactif au téléphone et équipe professionnelle sur place.",
+      "relativeTime": "il y a 4 mois",
+      "isoDate": "2026-05-18T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé G.",
+      "rating": 5,
+      "text": "Arrivés à l'heure, travail rapide et soigné malgré un troisième étage sans ascenseur, merci beaucoup.",
+      "relativeTime": "il y a 5 mois",
+      "isoDate": "2026-04-09T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé H.",
+      "rating": 5,
+      "text": "Service sérieux, visite technique précise, le volume annoncé était juste et le camion bien adapté.",
+      "relativeTime": "il y a 7 mois",
+      "isoDate": "2026-03-02T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé J.",
+      "rating": 5,
+      "text": "Des professionnels attentifs, le piano a été protégé et descendu sans la moindre rayure, bravo.",
+      "relativeTime": "il y a 8 mois",
+      "isoDate": "2026-01-22T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé K.",
+      "rating": 5,
+      "text": "Je recommande cette entreprise, l'équipe a été aimable et a pris grand soin de nos cartons fragiles.",
+      "relativeTime": "il y a 9 mois",
+      "isoDate": "2025-12-14T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé L.",
+      "rating": 3,
+      "text": "Équipe sympathique mais une heure de retard au rendez-vous sans prévenir, dommage pour la journée.",
+      "relativeTime": "il y a 5 mois",
+      "isoDate": "2026-05-04T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé M.",
+      "rating": 5,
+      "text": "Équipe ponctuelle et très soigneuse, nos meubles sont arrivés intacts, je recommande sans hésiter.",
+      "relativeTime": "il y a 13 mois",
+      "isoDate": "2025-08-27T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé N.",
+      "rating": 5,
+      "text": "Déménagement parfaitement organisé du début à la fin, devis respecté et aucune mauvaise surprise le jour J.",
+      "relativeTime": "il y a 14 mois",
+      "isoDate": "2025-07-16T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé P.",
+      "rating": 5,
+      "text": "Trois déménageurs efficaces et sympathiques, tout était emballé avec soin et remonté proprement chez nous.",
+      "relativeTime": "il y a 16 mois",
+      "isoDate": "2025-06-03T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé R.",
+      "rating": 5,
+      "text": "Très bon rapport qualité-prix, interlocuteur réactif au téléphone et équipe professionnelle sur place.",
+      "relativeTime": "il y a 17 mois",
+      "isoDate": "2025-04-21T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé S.",
+      "rating": 5,
+      "text": "Arrivés à l'heure, travail rapide et soigné malgré un troisième étage sans ascenseur, merci beaucoup.",
+      "relativeTime": "il y a 19 mois",
+      "isoDate": "2025-03-09T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé T.",
+      "rating": 5,
+      "text": "Service sérieux, visite technique précise, le volume annoncé était juste et le camion bien adapté.",
+      "relativeTime": "il y a 20 mois",
+      "isoDate": "2025-01-25T10:00:00.000Z"
+    },
+    {
+      "author": "Chloé V.",
+      "rating": 5,
+      "text": "Des professionnels attentifs, le piano a été protégé et descendu sans la moindre rayure, bravo.",
+      "relativeTime": "il y a 21 mois",
+      "isoDate": "2024-12-13T10:00:00.000Z"
+    }
+  ]
+}

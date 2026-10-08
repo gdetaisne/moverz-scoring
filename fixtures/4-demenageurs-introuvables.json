@@ -1,0 +1,72 @@
+{
+  "description": "Registre OK mais aucune fiche Google rattachable : pas de note globale (règle stricte).",
+  "asOf": "2026-10-01",
+  "mover": {
+    "id": "demo-sans-fiche",
+    "companyName": "Déménageurs Introuvables",
+    "siren": "444555666",
+    "siret": null,
+    "city": "Nantes",
+    "postalCode": "44000",
+    "googlePlaceId": null
+  },
+  "registry": {
+    "pappers": {
+      "httpStatus": 200,
+      "raw": {
+        "siren": "444555666",
+        "nom_entreprise": "DEMENAGEURS INTROUVABLES",
+        "entreprise_cessee": false,
+        "statut_rcs": "Inscrit",
+        "finances": [
+          {
+            "annee": 2025,
+            "date_de_cloture_exercice": "2025-09-30",
+            "chiffre_affaires": 420000,
+            "resultat": 21000,
+            "fonds_propres": 88000,
+            "tresorerie": 30000,
+            "dettes_financieres": 20000
+          }
+        ],
+        "decisions": []
+      }
+    },
+    "transportRegister": {
+      "source": "sitr",
+      "situationAu": "2026-09-28",
+      "ingestedAt": "2026-09-29T06:00:00.000Z",
+      "matched": true,
+      "matchKind": "siren_siege",
+      "siren": "444555666",
+      "noSiren": false,
+      "inMarchandises": true,
+      "inCommissionnaires": false,
+      "etablissementsCount": 1,
+      "marchandises": {
+        "siret": "44455566600011",
+        "raisonSociale": "(fictif)",
+        "postalCode": "44000",
+        "commune": "NANTES",
+        "siege": true,
+        "ltiNumero": "2021 00 0001",
+        "ltiDebut": "2021-01-01",
+        "ltiFin": "2030-02-28",
+        "ltiCopies": 3,
+        "lcNumero": null,
+        "lcDebut": null,
+        "lcFin": null,
+        "lcCopies": 0,
+        "lcVulCopies": 0
+      },
+      "commissionnaireSiret": null
+    },
+    "sireneClosed": false
+  },
+  "google": {
+    "error": "Aucune fiche Google dont le nom et la localisation correspondent au registre"
+  },
+  "reviews": {
+    "error": "fiche Google indisponible"
+  }
+}

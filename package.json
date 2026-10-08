@@ -1,0 +1,25 @@
+{
+  "name": "moverz-scoring",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Le cœur du score de fiabilité des déménageurs Moverz : 5 axes, poids et seuils publics, aucune note inventée.",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Guillaume Stehelin de Taisne (teneo-services.com)",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx examples/score-a-mover.ts"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "description": "Procédure collective en cours et licence de transport périmée : note calculée, mais jamais recommandée.",
+  "asOf": "2026-10-01",
+  "mover": {
+    "id": "demo-fragile",
+    "companyName": "Déménagement Fragile",
+    "siren": "111222333",
+    "siret": "11122233300019",
+    "city": "Lille",
+    "postalCode": "59000",
+    "googlePlaceId": "demo-place-fragile"
+  },
+  "registry": {
+    "pappers": {
+      "httpStatus": 200,
+      "raw": {
+        "siren": "111222333",
+        "nom_entreprise": "DEMENAGEMENT FRAGILE",
+        "entreprise_cessee": false,
+        "statut_rcs": "Inscrit",
+        "procedure_collective_en_cours": true,
+        "procedure_collective_existe": true,
+        "procedures_collectives": [
+          {
+            "type": "Redressement judiciaire",
+            "date_debut": "2026-05-12"
+          }
+        ],
+        "finances": [
+          {
+            "annee": 2025,
+            "date_de_cloture_exercice": "2025-12-31",
+            "chiffre_affaires": 640000,
+            "resultat": -58000,
+            "fonds_propres": -12000,
+            "tresorerie": 4000,
+            "dettes_financieres": 150000
+          },
+          {
+            "annee": 2024,
+            "date_de_cloture_exercice": "2024-12-31",
+            "chiffre_affaires": 710000,
+            "resultat": -9000,
+            "fonds_propres": 46000,
+            "tresorerie": 22000,
+            "dettes_financieres": 120000
+          }
+        ],
+        "decisions": []
+      }
+    },
+    "transportRegister": {
+      "source": "sitr",
+      "situationAu": "2026-09-28",
+      "ingestedAt": "2026-09-29T06:00:00.000Z",
+      "matched": true,
+      "matchKind": "siren_siege",
+      "siren": "111222333",
+      "noSiren": false,
+      "inMarchandises": true,
+      "inCommissionnaires": false,
+      "etablissementsCount": 1,
+      "marchandises": {
+        "siret": "11122233300019",
+        "raisonSociale": "(fictif)",
+        "postalCode": "59000",
+        "commune": "LILLE",
+        "siege": true,
+        "ltiNumero": "2021 00 0001",
+        "ltiDebut": "2021-01-01",
+        "ltiFin": "2025-03-31",
+        "ltiCopies": 3,
+        "lcNumero": null,
+        "lcDebut": null,
+        "lcFin": null,
+        "lcCopies": 0,
+        "lcVulCopies": 0
+      },
+      "commissionnaireSiret": null
+    },
+    "sireneClosed": false
+  },
+  "google": {
+    "placeId": "demo-place-fragile",
+    "rating": 4.2,
+    "ratingCount": 64,
+    "businessStatus": "OPERATIONAL"
+  },
+  "reviews": [
+    {
+      "author": "Lucas A.",
+      "rating": 5,
+      "text": "Équipe ponctuelle et très soigneuse, nos meubles sont arrivés intacts, je recommande sans hésiter.",
+      "relativeTime": "il y a 2 semaines",
+      "isoDate": "2026-09-21T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas B.",
+      "rating": 5,
+      "text": "Déménagement parfaitement organisé du début à la fin, devis respecté et aucune mauvaise surprise le jour J.",
+      "relativeTime": "il y a 2 semaines",
+      "isoDate": "2026-09-10T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas C.",
+      "rating": 4,
+      "text": "Trois déménageurs efficaces et sympathiques, tout était emballé avec soin et remonté proprement chez nous.",
+      "relativeTime": "il y a 1 mois",
+      "isoDate": "2026-08-30T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas D.",
+      "rating": 5,
+      "text": "Très bon rapport qualité-prix, interlocuteur réactif au téléphone et équipe professionnelle sur place.",
+      "relativeTime": "il y a 1 mois",
+      "isoDate": "2026-08-19T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas E.",
+      "rating": 5,
+      "text": "Arrivés à l'heure, travail rapide et soigné malgré un troisième étage sans ascenseur, merci beaucoup.",
+      "relativeTime": "il y a 1 mois",
+      "isoDate": "2026-08-08T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas F.",
+      "rating": 4,
+      "text": "Service sérieux, visite technique précise, le volume annoncé était juste et le camion bien adapté.",
+      "relativeTime": "il y a 2 mois",
+      "isoDate": "2026-07-28T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas G.",
+      "rating": 5,
+      "text": "Des professionnels attentifs, le piano a été protégé et descendu sans la moindre rayure, bravo.",
+      "relativeTime": "il y a 2 mois",
+      "isoDate": "2026-07-17T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas H.",
+      "rating": 5,
+      "text": "Je recommande cette entreprise, l'équipe a été aimable et a pris grand soin de nos cartons fragiles.",
+      "relativeTime": "il y a 2 mois",
+      "isoDate": "2026-07-06T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas J.",
+      "rating": 4,
+      "text": "Prestation impeccable, communication claire avant le déménagement et équipe de bonne humeur toute la journée.",
+      "relativeTime": "il y a 3 mois",
+      "isoDate": "2026-06-25T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas K.",
+      "rating": 5,
+      "text": "Excellente expérience, le chef d'équipe a tout coordonné et le déménagement a fini plus tôt que prévu.",
+      "relativeTime": "il y a 3 mois",
+      "isoDate": "2026-06-14T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas L.",
+      "rating": 5,
+      "text": "Équipe ponctuelle et très soigneuse, nos meubles sont arrivés intacts, je recommande sans hésiter.",
+      "relativeTime": "il y a 4 mois",
+      "isoDate": "2026-06-03T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas M.",
+      "rating": 4,
+      "text": "Déménagement parfaitement organisé du début à la fin, devis respecté et aucune mauvaise surprise le jour J.",
+      "relativeTime": "il y a 4 mois",
+      "isoDate": "2026-05-23T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas N.",
+      "rating": 5,
+      "text": "Trois déménageurs efficaces et sympathiques, tout était emballé avec soin et remonté proprement chez nous.",
+      "relativeTime": "il y a 4 mois",
+      "isoDate": "2026-05-12T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas P.",
+      "rating": 5,
+      "text": "Très bon rapport qualité-prix, interlocuteur réactif au téléphone et équipe professionnelle sur place.",
+      "relativeTime": "il y a 5 mois",
+      "isoDate": "2026-05-01T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas R.",
+      "rating": 4,
+      "text": "Arrivés à l'heure, travail rapide et soigné malgré un troisième étage sans ascenseur, merci beaucoup.",
+      "relativeTime": "il y a 5 mois",
+      "isoDate": "2026-04-20T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas S.",
+      "rating": 5,
+      "text": "Service sérieux, visite technique précise, le volume annoncé était juste et le camion bien adapté.",
+      "relativeTime": "il y a 5 mois",
+      "isoDate": "2026-04-09T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas T.",
+      "rating": 5,
+      "text": "Des professionnels attentifs, le piano a été protégé et descendu sans la moindre rayure, bravo.",
+      "relativeTime": "il y a 6 mois",
+      "isoDate": "2026-03-29T10:00:00.000Z"
+    },
+    {
+      "author": "Lucas V.",
+      "rating": 4,
+      "text": "Je recommande cette entreprise, l'équipe a été aimable et a pris grand soin de nos cartons fragiles.",
+      "relativeTime": "il y a 6 mois",
+      "isoDate": "2026-03-18T10:00:00.000Z"
+    },
+    {
+      "author": "Manon A.",
+      "rating": 5,
+      "text": "Prestation impeccable, communication claire avant le déménagement et équipe de bonne humeur toute la journée.",
+      "relativeTime": "il y a 6 mois",
+      "isoDate": "2026-03-07T10:00:00.000Z"
+    },
+    {
+      "author": "Manon B.",
+      "rating": 5,
+      "text": "Excellente expérience, le chef d'équipe a tout coordonné et le déménagement a fini plus tôt que prévu.",
+      "relativeTime": "il y a 7 mois",
+      "isoDate": "2026-02-24T10:00:00.000Z"
+    },
+    {
+      "author": "Manon C.",
+      "rating": 4,
+      "text": "Équipe ponctuelle et très soigneuse, nos meubles sont arrivés intacts, je recommande sans hésiter.",
+      "relativeTime": "il y a 7 mois",
+      "isoDate": "2026-02-13T10:00:00.000Z"
+    },
+    {
+      "author": "Manon D.",
+      "rating": 5,
+      "text": "Déménagement parfaitement organisé du début à la fin, devis respecté et aucune mauvaise surprise le jour J.",
+      "relativeTime": "il y a 8 mois",
+      "isoDate": "2026-02-02T10:00:00.000Z"
+    },
+    {
+      "author": "Manon E.",
+      "rating": 5,
+      "text": "Trois déménageurs efficaces et sympathiques, tout était emballé avec soin et remonté proprement chez nous.",
+      "relativeTime": "il y a 8 mois",
+      "isoDate": "2026-01-22T10:00:00.000Z"
+    },
+    {
+      "author": "Manon F.",
+      "rating": 4,
+      "text": "Très bon rapport qualité-prix, interlocuteur réactif au téléphone et équipe professionnelle sur place.",
+      "relativeTime": "il y a 8 mois",
+      "isoDate": "2026-01-11T10:00:00.000Z"
+    },
+    {
+      "author": "Manon G.",
+      "rating": 5,
+      "text": "Arrivés à l'heure, travail rapide et soigné malgré un troisième étage sans ascenseur, merci beaucoup.",
+      "relativeTime": "il y a 9 mois",
+      "isoDate": "2025-12-31T10:00:00.000Z"
+    },
+    {
+      "author": "Manon H.",
+      "rating": 5,
+      "text": "Service sérieux, visite technique précise, le volume annoncé était juste et le camion bien adapté.",
+      "relativeTime": "il y a 9 mois",
+      "isoDate": "2025-12-20T10:00:00.000Z"
+    },
+    {
+      "author": "Manon J.",
+      "rating": 4,
+      "text": "Des professionnels attentifs, le piano a été protégé et descendu sans la moindre rayure, bravo.",
+      "relativeTime": "il y a 9 mois",
+      "isoDate": "2025-12-09T10:00:00.000Z"
+    },
+    {
+      "author": "Manon K.",
+      "rating": 5,
+      "text": "Je recommande cette entreprise, l'équipe a été aimable et a pris grand soin de nos cartons fragiles.",
+      "relativeTime": "il y a 10 mois",
+      "isoDate": "2025-11-28T10:00:00.000Z"
+    },
+    {
+      "author": "Manon L.",
+      "rating": 5,
+      "text": "Prestation impeccable, communication claire avant le déménagement et équipe de bonne humeur toute la journée.",
+      "relativeTime": "il y a 10 mois",
+      "isoDate": "2025-11-17T10:00:00.000Z"
+    },
+    {
+      "author": "Manon M.",
+      "rating": 4,
+      "text": "Excellente expérience, le chef d'équipe a tout coordonné et le déménagement a fini plus tôt que prévu.",
+      "relativeTime": "il y a 10 mois",
+      "isoDate": "2025-11-06T10:00:00.000Z"
+    },
+    {
+      "author": "Manon N.",
+      "rating": 1,
+      "text": "Carton de vaisselle cassé et commode abîmée, aucune réponse du service client depuis un mois.",
+      "relativeTime": "il y a 2 mois",
+      "isoDate": "2026-08-02T10:00:00.000Z"
+    },
+    {
+      "author": "Manon P.",
+      "rating": 1,
+      "text": "Supplément facturé le jour même, le montant n'avait rien à voir avec le devis signé.",
+      "relativeTime": "il y a 3 mois",
+      "isoDate": "2026-07-03T10:00:00.000Z"
+    },
+    {
+      "author": "Manon R.",
+      "rating": 2,
+      "text": "Un carton manquant à l'arrivée, jamais retrouvé malgré plusieurs relances par téléphone.",
+      "relativeTime": "il y a 6 mois",
+      "isoDate": "2026-04-04T10:00:00.000Z"
+    },
+    {
+      "author": "Manon S.",
+      "rating": 1,
+      "text": "Déménageurs en retard et désagréables, attitude limite avec ma mère âgée, je déconseille.",
+      "relativeTime": "il y a 8 mois",
+      "isoDate": "2026-01-24T10:00:00.000Z"
+    }
+  ]
+}

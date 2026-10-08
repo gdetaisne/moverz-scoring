@@ -1,0 +1,26 @@
+Copyright (c) 2026 Guillaume Stehelin de Taisne. All rights reserved.
+
+This repository is published for reading and evaluation only.
+
+You may read the source code and documentation, and run it locally in order to
+understand how the Moverz mover score is computed.
+
+You may NOT copy, modify, merge, publish, distribute, sublicense, sell, or reuse
+any part of this repository (code, documentation, weights, thresholds or
+fixtures) in another product or service, commercial or not, without prior
+written permission from the copyright holder.
+
+The weights and thresholds are published as a transparency commitment toward
+Moverz customers and partner movers. Publishing them does not grant a licence
+to use them.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+---
+
+Tous droits réservés. Ce dépôt est publié pour lecture et évaluation : vous
+pouvez lire et exécuter le code localement pour comprendre le calcul du score.
+Toute reproduction, modification ou réutilisation, totale ou partielle, est
+interdite sans accord écrit préalable de l'auteur.
