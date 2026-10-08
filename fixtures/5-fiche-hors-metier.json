@@ -1,0 +1,304 @@
+{
+  "description": "Fiche Google rattachée par l'adresse, mais c'est celle d'un autre métier (un cabinet de gestion immobilière installé dans le même immeuble) : pas de note globale.",
+  "asOf": "2026-10-01",
+  "mover": {
+    "id": "demo-hors-metier",
+    "companyName": "Transports Voisin",
+    "siren": "777888999",
+    "siret": "77788899900011",
+    "city": "Bordeaux",
+    "postalCode": "33000",
+    "googlePlaceId": "demo-place-voisin"
+  },
+  "registry": {
+    "pappers": {
+      "httpStatus": 200,
+      "raw": {
+        "siren": "777888999",
+        "nom_entreprise": "TRANSPORTS VOISIN",
+        "entreprise_cessee": false,
+        "statut_rcs": "Inscrit",
+        "procedure_collective_en_cours": false,
+        "procedure_collective_existe": false,
+        "procedures_collectives": [],
+        "finances": [
+          {
+            "annee": 2025,
+            "date_de_cloture_exercice": "2025-12-31",
+            "chiffre_affaires": 1800000,
+            "resultat": 95000,
+            "fonds_propres": 420000,
+            "tresorerie": 180000,
+            "dettes_financieres": 60000
+          },
+          {
+            "annee": 2024,
+            "date_de_cloture_exercice": "2024-12-31",
+            "chiffre_affaires": 1650000,
+            "resultat": 71000,
+            "fonds_propres": 340000,
+            "tresorerie": 150000,
+            "dettes_financieres": 80000
+          }
+        ],
+        "decisions": [
+          {
+            "date": "2019-06-14",
+            "juridiction": "Tribunal de commerce",
+            "position": "défendeur",
+            "dispositif": "Condamne au paiement d'une facture de sous-traitance"
+          }
+        ]
+      }
+    },
+    "transportRegister": {
+      "source": "sitr",
+      "situationAu": "2026-09-28",
+      "ingestedAt": "2026-09-29T06:00:00.000Z",
+      "matched": true,
+      "matchKind": "siren_siege",
+      "siren": "777888999",
+      "noSiren": false,
+      "inMarchandises": true,
+      "inCommissionnaires": false,
+      "etablissementsCount": 1,
+      "marchandises": {
+        "siret": "77788899900017",
+        "raisonSociale": "(fictif)",
+        "postalCode": "33000",
+        "commune": "BORDEAUX",
+        "siege": true,
+        "ltiNumero": "2021 00 0001",
+        "ltiDebut": "2021-01-01",
+        "ltiFin": "2031-01-01",
+        "ltiCopies": 3,
+        "lcNumero": "2021 00 0002",
+        "lcDebut": "2021-01-01",
+        "lcFin": "2031-01-01",
+        "lcCopies": 2,
+        "lcVulCopies": 0
+      },
+      "commissionnaireSiret": null
+    },
+    "sireneClosed": false
+  },
+  "google": {
+    "placeId": "demo-place-voisin",
+    "name": "Cabinet Gestion Immobilière des Quais",
+    "rating": 4.6,
+    "ratingCount": 41,
+    "businessStatus": "OPERATIONAL"
+  },
+  "reviews": [
+    {
+      "author": "Client fictif 1",
+      "rating": 5,
+      "text": "Gestionnaire très réactif, les charges de la copropriété sont enfin claires.",
+      "relativeTime": "",
+      "isoDate": "2026-09-26T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 2",
+      "rating": 5,
+      "text": "Assemblée générale bien préparée, le syndic répond toujours aux courriels.",
+      "relativeTime": "",
+      "isoDate": "2026-09-14T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 3",
+      "rating": 5,
+      "text": "Suivi impeccable des travaux de ravalement de la façade, merci à l'équipe.",
+      "relativeTime": "",
+      "isoDate": "2026-09-02T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 4",
+      "rating": 5,
+      "text": "Très bon accompagnement pour la mise en location de notre appartement.",
+      "relativeTime": "",
+      "isoDate": "2026-08-21T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 5",
+      "rating": 5,
+      "text": "Le cabinet a réglé rapidement la fuite d'eau dans les parties communes.",
+      "relativeTime": "",
+      "isoDate": "2026-08-09T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 6",
+      "rating": 5,
+      "text": "Agence sérieuse, état des lieux précis et caution rendue dans les délais.",
+      "relativeTime": "",
+      "isoDate": "2026-07-28T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 7",
+      "rating": 5,
+      "text": "Interlocutrice disponible, le contrat de gestion est transparent et complet.",
+      "relativeTime": "",
+      "isoDate": "2026-07-16T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 8",
+      "rating": 5,
+      "text": "Bon suivi de l'ascenseur en panne, intervention du réparateur en deux jours.",
+      "relativeTime": "",
+      "isoDate": "2026-07-04T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 9",
+      "rating": 5,
+      "text": "Rien à redire sur la gestion locative, loyers versés chaque mois sans retard.",
+      "relativeTime": "",
+      "isoDate": "2026-06-22T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 10",
+      "rating": 5,
+      "text": "Accueil agréable à l'agence, dossier de vente de notre lot traité vite.",
+      "relativeTime": "",
+      "isoDate": "2026-06-10T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 11",
+      "rating": 5,
+      "text": "Gestionnaire très réactif, les charges de la copropriété sont enfin claires. Avis n° 11.",
+      "relativeTime": "",
+      "isoDate": "2026-05-29T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 12",
+      "rating": 5,
+      "text": "Assemblée générale bien préparée, le syndic répond toujours aux courriels. Avis n° 12.",
+      "relativeTime": "",
+      "isoDate": "2026-05-17T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 13",
+      "rating": 5,
+      "text": "Suivi impeccable des travaux de ravalement de la façade, merci à l'équipe. Avis n° 13.",
+      "relativeTime": "",
+      "isoDate": "2026-05-05T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 14",
+      "rating": 5,
+      "text": "Très bon accompagnement pour la mise en location de notre appartement. Avis n° 14.",
+      "relativeTime": "",
+      "isoDate": "2026-04-23T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 15",
+      "rating": 5,
+      "text": "Le cabinet a réglé rapidement la fuite d'eau dans les parties communes. Avis n° 15.",
+      "relativeTime": "",
+      "isoDate": "2026-04-11T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 16",
+      "rating": 5,
+      "text": "Agence sérieuse, état des lieux précis et caution rendue dans les délais. Avis n° 16.",
+      "relativeTime": "",
+      "isoDate": "2026-03-30T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 17",
+      "rating": 5,
+      "text": "Interlocutrice disponible, le contrat de gestion est transparent et complet. Avis n° 17.",
+      "relativeTime": "",
+      "isoDate": "2026-03-18T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 18",
+      "rating": 5,
+      "text": "Bon suivi de l'ascenseur en panne, intervention du réparateur en deux jours. Avis n° 18.",
+      "relativeTime": "",
+      "isoDate": "2026-03-06T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 19",
+      "rating": 5,
+      "text": "Rien à redire sur la gestion locative, loyers versés chaque mois sans retard. Avis n° 19.",
+      "relativeTime": "",
+      "isoDate": "2026-02-22T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 20",
+      "rating": 5,
+      "text": "Accueil agréable à l'agence, dossier de vente de notre lot traité vite. Avis n° 20.",
+      "relativeTime": "",
+      "isoDate": "2026-02-10T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 21",
+      "rating": 5,
+      "text": "Gestionnaire très réactif, les charges de la copropriété sont enfin claires. Avis n° 21.",
+      "relativeTime": "",
+      "isoDate": "2026-01-29T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 22",
+      "rating": 5,
+      "text": "Assemblée générale bien préparée, le syndic répond toujours aux courriels. Avis n° 22.",
+      "relativeTime": "",
+      "isoDate": "2026-01-17T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 23",
+      "rating": 5,
+      "text": "Suivi impeccable des travaux de ravalement de la façade, merci à l'équipe. Avis n° 23.",
+      "relativeTime": "",
+      "isoDate": "2026-01-05T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 24",
+      "rating": 5,
+      "text": "Très bon accompagnement pour la mise en location de notre appartement. Avis n° 24.",
+      "relativeTime": "",
+      "isoDate": "2025-12-24T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 25",
+      "rating": 5,
+      "text": "Le cabinet a réglé rapidement la fuite d'eau dans les parties communes. Avis n° 25.",
+      "relativeTime": "",
+      "isoDate": "2025-12-12T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 26",
+      "rating": 5,
+      "text": "Agence sérieuse, état des lieux précis et caution rendue dans les délais. Avis n° 26.",
+      "relativeTime": "",
+      "isoDate": "2025-11-30T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 27",
+      "rating": 5,
+      "text": "Interlocutrice disponible, le contrat de gestion est transparent et complet. Avis n° 27.",
+      "relativeTime": "",
+      "isoDate": "2025-11-18T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 28",
+      "rating": 5,
+      "text": "Bon suivi de l'ascenseur en panne, intervention du réparateur en deux jours. Avis n° 28.",
+      "relativeTime": "",
+      "isoDate": "2025-11-06T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 29",
+      "rating": 5,
+      "text": "Rien à redire sur la gestion locative, loyers versés chaque mois sans retard. Avis n° 29.",
+      "relativeTime": "",
+      "isoDate": "2025-10-25T10:00:00.000Z"
+    },
+    {
+      "author": "Client fictif 30",
+      "rating": 5,
+      "text": "Accueil agréable à l'agence, dossier de vente de notre lot traité vite. Avis n° 30.",
+      "relativeTime": "",
+      "isoDate": "2025-10-13T10:00:00.000Z"
+    }
+  ]
+}

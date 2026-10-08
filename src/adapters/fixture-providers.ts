@@ -23,7 +23,7 @@ export interface MoverFixture {
     transportRegister: unknown | null;
     sireneClosed: boolean | null;
   };
-  google: { placeId: string; rating: number | null; ratingCount: number | null; businessStatus: string | null } | { error: string };
+  google: { placeId: string; name?: string | null; rating: number | null; ratingCount: number | null; businessStatus: string | null } | { error: string };
   reviews: GoogleReview[] | { error: string };
 }
 

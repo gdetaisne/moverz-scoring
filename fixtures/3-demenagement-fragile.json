@@ -82,6 +82,7 @@
   },
   "google": {
     "placeId": "demo-place-fragile",
+    "name": "Déménagement Fragile",
     "rating": 4.2,
     "ratingCount": 64,
     "businessStatus": "OPERATIONAL"

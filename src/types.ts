@@ -70,6 +70,8 @@ export interface GoogleSnapshot {
   available: boolean;
   source: "google_places";
   placeId: string | null;
+  /** Nom affiché de la fiche (Google Places `displayName.text`) : sert à juger son métier. */
+  name?: string | null;
   rating: number | null;
   ratingCount: number | null;
   businessStatus: string | null;

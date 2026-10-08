@@ -84,6 +84,7 @@
   },
   "google": {
     "placeId": "demo-place-exemple",
+    "name": "Déménagements Exemple Lyon",
     "rating": 4.7,
     "ratingCount": 214,
     "businessStatus": "OPERATIONAL"

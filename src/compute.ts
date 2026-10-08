@@ -8,6 +8,7 @@ import {
   LEGACY_DEFAULT_CONFIG,
 } from "./formulas.js";
 import type { LlmClient } from "./llm/client.js";
+import { assessGoogleTrade, type GoogleTradeVerdict } from "./google-trade.js";
 import { motifPrincipal, type Motif } from "./motif.js";
 import type { RegistrySnapshot, ScoringProviders } from "./ports.js";
 import { deriveReputationSnapshot, deriveVigilanceSnapshot } from "./reputation.js";
@@ -36,6 +37,10 @@ import type {
  *
  * Exactement deux exceptions, à 50, uniquement quand la source a répondu :
  * financier sans bilan publié, fiche Google sans aucune note.
+ *
+ * Une fiche Google « hors métier » (ses avis ne parlent pas de déménagement,
+ * `google-trade.ts`) n'est pas celle d'un déménageur : sa composante Google est
+ * retirée, et il n'y a pas de note globale.
  */
 
 export const ALGORITHM_VERSION = "legacy-compatible-v1";
@@ -77,6 +82,8 @@ export interface ScoringResult {
     financialOverrideSupersededByRegistry: boolean;
     sitrJuridicalVerdict: SitrJuridicalVerdict;
     sireneClosed: boolean;
+    /** La fiche Google décrit-elle un déménageur ? `offTrade` = non : note non fiable. Null sans avis collectés. */
+    googleTrade: GoogleTradeVerdict | null;
   };
 }
 
@@ -165,6 +172,10 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
   });
   if (financial.fallbackApplied) warnings.push("financial_fallback_applied:no_published_accounts");
 
+  // Fiche hors métier — jugée sur tous les avis collectés (24 mois), pas sur la fenêtre.
+  const googleTrade = reviewsUsable ? assessGoogleTrade(reviews.reviews, google.name ?? null) : null;
+  if (googleTrade?.offTrade) warnings.push(`google_fiche_off_trade:${Math.round((googleTrade.ratio ?? 0) * 100)}%`);
+
   // Juridique — le registre des transporteurs et l'état Sirene peuvent l'écraser à 0.
   const sitrVerdict = sitrJuridicalVerdict(transportRegister);
   const sireneClosed = input.registry.sireneClosed === true;
@@ -177,7 +188,7 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
   const strict = buildStrictGlobalScore({
     financial: financial.score,
     juridical,
-    google: googleForGlobal.score,
+    google: googleTrade?.offTrade ? null : googleForGlobal.score,
     reputation: reviewsUsable ? reputation.reputationScore : null,
     vigilance: reviewsUsable ? vigilance.vigilanceScore : null,
     config: LEGACY_DEFAULT_CONFIG,
@@ -190,7 +201,9 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
         !pappers.available ? `Registre: ${pappers.error ?? "indisponible"}` : null,
         !google.available ? `Google: ${google.error ?? "indisponible"}` : null,
         google.available && !reviews.available ? `Avis: ${reviews.error ?? "indisponibles"}` : null,
-        `Composants manquants: ${strict.missingComponents.join(", ")}`,
+        googleTrade?.offTrade
+          ? `Fiche Google hors métier : ${googleTrade.tradeReviews}/${googleTrade.textReviews} avis parlent de déménagement (« ${googleTrade.ficheName ?? "sans nom"} »)`
+          : `Composants manquants: ${strict.missingComponents.join(", ")}`,
       ]
         .filter(Boolean)
         .join(" | ");
@@ -223,6 +236,7 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
       financialOverrideSupersededByRegistry: overrideSuperseded,
       sitrJuridicalVerdict: sitrVerdict,
       sireneClosed,
+      googleTrade,
     },
   };
 }

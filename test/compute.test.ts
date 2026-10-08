@@ -79,6 +79,24 @@ describe("orchestration stricte", () => {
     assert.equal(superseded.details.financialOverrideSupersededByRegistry, true);
   });
 
+  it("fiche Google hors métier : composante Google retirée, pas de note, et la raison", async () => {
+    const offTrade = reviewsOf(30, { text: "Syndic réactif, les charges de la copropriété sont enfin claires et bien suivies." });
+    const r = await computeScore(input({ google: google({ name: "Cabinet Gestion Exemple" }), reviews: reviewsSnapshot(offTrade) }));
+    assert.equal(r.globalScore, null);
+    assert.equal(r.isReliable, false);
+    assert.equal(r.components.google, null);
+    assert.equal(r.details.googleTrade?.offTrade, true);
+    assert.match(r.reliabilityError ?? "", /Fiche Google hors métier : 0\/30 avis/);
+    assert.ok(r.reliabilityDetails.warnings.includes("google_fiche_off_trade:0%"));
+    assert.equal(r.components.reputation, 100, "les autres sous-scores restent visibles pour l'audit");
+  });
+
+  it("fiche de déménageur : le verdict métier est gardé, la note reste fiable", async () => {
+    const r = await computeScore(input({ google: google({ name: "Déménagements Exemple" }) }));
+    assert.equal(r.details.googleTrade?.offTrade, false);
+    assert.equal(r.isReliable, true);
+  });
+
   it("la santé de l'entreprise est extraite du registre et le motif principal est calculé", async () => {
     const r = await computeScore(
       input({ registry: registry({ pappers: pappers({ raw: { procedure_collective_en_cours: true, procedures_collectives: [{ type: "Redressement judiciaire" }] } }) }) }),
@@ -98,7 +116,7 @@ describe("avec les ports (données de démonstration)", () => {
     return scoreMover(fixture.mover, providers, { now: new Date(fixture.asOf), ...options });
   };
 
-  it("les quatre cas de démonstration donnent le résultat documenté dans le README", async () => {
+  it("les cinq cas de démonstration donnent le résultat documenté dans le README", async () => {
     assert.equal((await run("demo-confirme")).globalScore, 92);
     const dyn = await run("demo-dynamique");
     assert.equal(dyn.globalScore, 83);
@@ -108,6 +126,9 @@ describe("avec les ports (données de démonstration)", () => {
     assert.equal(fragile.companyHealth.fragile, true);
     assert.equal(fragile.components.juridical, 0);
     assert.equal((await run("demo-sans-fiche")).globalScore, null);
+    const horsMetier = await run("demo-hors-metier");
+    assert.equal(horsMetier.globalScore, null);
+    assert.equal(horsMetier.details.googleTrade?.offTrade, true);
   });
 
   it("fiche Google non prouvée : ni Google ni avis interrogés, pas de note globale", async () => {

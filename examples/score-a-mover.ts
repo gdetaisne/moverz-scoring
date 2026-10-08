@@ -47,6 +47,8 @@ function show(name: string, description: string, r: ScoringResult) {
     r.reputation.suspiciousCount > 0 && `${r.reputation.suspiciousCount} avis écartés comme non informatifs`,
     r.details.sitrJuridicalVerdict === "zero" && "registre des transporteurs : absent ou licence périmée → juridique 0",
     r.companyHealth.resume && `santé de l'entreprise : ${r.companyHealth.resume}`,
+    r.details.googleTrade?.offTrade &&
+      `fiche Google hors métier : ${r.details.googleTrade.tradeReviews}/${r.details.googleTrade.textReviews} avis parlent de déménagement → composante Google retirée`,
   ].filter(Boolean);
   for (const flag of flags) console.log(`   · ${flag}`);
   const alerts = r.vigilance.categories.filter((c) => c.status !== "ok");

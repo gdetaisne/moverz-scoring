@@ -11,7 +11,7 @@ export function daysAgo(days: number, from: Date = NOW): string {
   return new Date(from.getTime() - days * 24 * 3600 * 1000).toISOString();
 }
 
-export const LONG_POSITIVE = "Équipe ponctuelle et soigneuse, tout est arrivé intact, je recommande vivement cette entreprise.";
+export const LONG_POSITIVE = "Déménagement réussi : équipe ponctuelle et soigneuse, tout est arrivé intact, je recommande vivement cette entreprise.";
 
 export function review(partial: Partial<GoogleReview> = {}): GoogleReview {
   counter += 1;
