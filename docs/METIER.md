@@ -68,7 +68,7 @@ Ce que le score en fait :
 
 - au juridique, chaque décision pèse, plus si elle est récente (moins de 3 ans), plus encore si elle contient un mot grave (liquidation, redressement, sauvegarde, faillite, dissolution, condamnation) ; une décision où l'entreprise **attaque** ne compte pas : réclamer son dû n'est pas un risque ;
 - au-delà de la note, `src/company-health.ts` lit l'état de l'entreprise (cessée, radiée, procédure en cours ou passée), y compris dans les **annonces BODACC**, qui portent souvent la procédure avant qu'elle ne soit structurée dans les bases ;
-- une entreprise dans cet état n'est **jamais** proposée au client ni labellisée, quel que soit son score : un score élevé ne rachète pas une société en difficulté. La note indicative d'un devis externe est, elle, plafonnée à 49 (sous « Correct »).
+- une entreprise dans cet état n'est **jamais** proposée au client ni labellisée, quel que soit son score : un score élevé ne rachète pas une société en difficulté. La note indicative d'un devis externe est, elle, plafonnée à 49 (sous « Correct ») ; la vérification à la demande réutilise les mêmes lectures du registre mais n'affiche pas de note indicative : soit le Score Moverz, soit pas de Score.
 
 ## 6. Distinguer un avis d'un bruit
 
@@ -99,6 +99,8 @@ Une fiche Google **introuvable**, elle, bloque la note : on ne note jamais un d�
 Pourquoi deux seuils : mesuré sur les 1 259 notes fiables, un seuil unique ne sépare pas. La paroisse était à 11 % d'avis du métier, un vrai déménageur à 14 %. Le nom de la fiche, lui, les sépare. Le vocabulaire est volontairement large : un garde-meubles ou un service de débarras reste dans le métier ; les garder ou non dans la liste est une question de positionnement, pas de rattachement. Simulée sur les notes de production le 08/10/2026, la règle a désigné 18 fiches réelles : paroisse, promoteur, déchetterie, cabinet juridique, agence d'intérim, nettoyage, navettes, entrepôts logistiques.
 
 Limite connue : sous 5 avis à texte, on ne tranche pas ; une fiche d'un autre métier presque sans avis passe ce contrôle, et ne reste arrêtée que par le rapprochement nom/localisation.
+
+**Le même Score, à la demande (14/10/2026).** Sur moverz.fr, l'outil « Vérifier un déménageur » donne le Score Moverz de n'importe quelle entreprise, inscrite chez Moverz ou non. C'est le même Score : mêmes cinq critères, mêmes poids, mêmes formules, même règle stricte (un critère manquant, pas de Score, et la raison est écrite) et même contrôle du métier de la fiche Google. Un Score de moins de 30 jours, sur la même fiche Google, est repris tel quel ; sinon il est recalculé, puis enregistré avec sa date. Les différences de lecture des sources sont dans `docs/architecture.md` § « Le score à la demande ».
 
 ## 8. Ce qu'on a changé en mesurant
 

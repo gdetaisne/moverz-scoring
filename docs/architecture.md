@@ -49,7 +49,18 @@ Tout ce qui touche le réseau est derrière trois ports (`src/ports.ts`). Contra
 4 bis. Une fiche Google **hors métier** (moins de 10 % d'avis qui parlent de déménagement, 20 % si son nom n'en dit rien, sur au moins 5 avis à texte) perd sa composante Google : pas de note globale, et la raison est écrite (`src/google-trade.ts`, depuis le 08/10/2026). Le contrôle lit toute la collecte d'avis, pas la fenêtre de la réputation.
 5. Une note non fiable ne classe jamais un déménageur dans la liste et ne donne jamais de label.
 
-À l'inverse, la note *indicative* d'un devis externe (`src/indicative-score.ts`) renormalise sur les axes disponibles : c'est un autre usage, avec un autre nom, et jamais présenté comme le score Moverz.
+À l'inverse, la note *indicative* d'un devis externe (`src/indicative-score.ts`) renormalise sur les axes disponibles : c'est un autre usage, avec un autre nom, et jamais présentée comme le score Moverz. La vérification à la demande n'affiche pas cette note : elle donne le Score Moverz en entier, ou pas de Score.
+
+## Le score à la demande
+
+Depuis le 14/10/2026, l'outil « Vérifier un déménageur » de moverz.fr calcule le Score Moverz de n'importe quelle entreprise vérifiée, inscrite chez Moverz ou non. Le cœur du calcul n'a pas changé : mêmes cinq critères (santé financière, situation juridique, avis Google, réputation, vigilance), mêmes poids, mêmes formules, même règle stricte. La fenêtre d'avis est la même : 12 mois, 24 s'il y a moins de 12 avis récents.
+
+1. **Reprise ou recalcul.** Un Score en base de moins de 30 jours, calculé sur la même fiche Google (celui de la notation d'un déménageur, ou un calcul précédent de l'outil), est repris. Sinon le Score est recalculé à la demande, avec les lectures du moteur de vérification, puis enregistré avec sa date (une ligne par calcul).
+2. **Un Score non fiable est enregistré, jamais repris.** Un calcul auquel il manque un critère est gardé dans l'historique avec sa raison, mais seuls les Scores fiables peuvent être repris. Si le calcul du jour échoue faute de sources et qu'un Score fiable plus ancien existe, c'est ce dernier qui est montré, avec sa date.
+3. **Avis : au plus 20 pages.** La notation habituelle lit les avis par SearchAPI jusqu'à 50 pages ; l'outil en lit 20 au plus, dans la limite de son plafond de dépense par vérification. Les pages non lues sont rendues au plafond. Si le plafond est atteint ou si la lecture échoue, la réputation et la vigilance restent inconnues : pas de Score, et la raison est écrite.
+4. **Analyse des avis.** Le modèle de langage n'est appelé que s'il y a au moins un avis de 4★ ou moins et que le plafond le permet ; sinon (ou s'il ne répond pas) c'est la méthode par mots-clés de la notation qui lit les avis.
+5. **Fiches héritées non prises en compte.** La notation habituelle peut additionner à la fiche vivante les avis d'une ancienne fiche Google de la même entreprise (voir « Coûts et caches »). Le calcul à la demande ne lit que la fiche Google retenue pour la vérification : cette addition n'y est pas faite. Le visiteur peut choisir une autre fiche parmi celles trouvées pour l'entreprise.
+6. **Pas d'écriture sur la note officielle.** L'outil n'écrit jamais dans le score courant d'un déménageur. Pour un déménageur déjà noté dont la note a plus de 30 jours, il demande à la file de calcul ci-dessous de relancer la notation habituelle, en arrière-plan : le visiteur n'attend pas, et ce calcul paie ses propres sources. Pas de nouveau calcul si un est déjà en attente ou en cours, ni si un a été créé pour ce déménageur dans les dernières 24 h ; le nombre de calculs que l'outil peut déclencher par jour est plafonné.
 
 ## File de calcul
 
