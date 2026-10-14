@@ -23,6 +23,12 @@ export interface LlmClient {
   completeJson(prompt: string, options?: { maxTokens?: number }): Promise<LlmJsonResult | null>;
 }
 
+/**
+ * Délai maximal d'une réponse du modèle (production, depuis le 14/10/2026) : au-delà,
+ * l'appel est abandonné et l'analyse passe au client suivant, puis aux mots-clés.
+ */
+export const REVIEWS_LLM_TIMEOUT_MS = 30_000;
+
 /** Les modèles utilisés en production pour lire les avis et les bilans. */
 export const REVIEWS_LLM_MODELS = { openai: "gpt-4o-mini", anthropic: "claude-haiku-4-5" } as const;
 

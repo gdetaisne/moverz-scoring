@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { afterProviderFailure, claimNextJob, InMemoryJobStore, retryDelayMs, type ScoringJob } from "../src/jobs.js";
+import { afterProviderFailure, claimNextJob, InMemoryJobStore, retryDelayMs, STALE_RUNNING_MS, staleRunningAction, type ScoringJob } from "../src/jobs.js";
 import { selectReviewsWindow } from "../src/review-window.js";
 import { partnerScoreLabel, partnerScoreWatch, STUCK_RUNNING_ERROR } from "../src/score-watch.js";
 import { daysAgo, NOW, review, reviewsOf } from "./helpers.js";
@@ -62,6 +62,12 @@ describe("file des calculs", () => {
     assert.equal(retry.status, "PENDING");
     assert.equal(retry.status === "PENDING" && retry.scheduledAt.getTime() - NOW.getTime(), 4 * 60_000);
     assert.deepEqual(afterProviderFailure({ attempts: 3, maxAttempts: 3 }, NOW), { status: "FAILED" });
+  });
+
+  it("job bloqué « en cours » (14/10/2026) : remis en file s'il lui reste une tentative, échec définitif sinon", () => {
+    assert.equal(STALE_RUNNING_MS, 10 * 60_000);
+    assert.equal(staleRunningAction({ attempts: 1, maxAttempts: 3 }), "requeue");
+    assert.equal(staleRunningAction({ attempts: 3, maxAttempts: 3 }), "fail");
   });
 });
 

@@ -8,7 +8,23 @@
  *     on abandonne. Sûr avec plusieurs instances, sans verrou applicatif.
  *  2. Retry exponentiel : un échec de fournisseur repasse PENDING avec
  *     `scheduledAt = maintenant + 2 min × 2^(tentatives − 1)` ; à 3 tentatives,
- *     FAILED définitif (et alerte à l'équipe).
+ *     FAILED définitif (et alerte à l'équipe). Un job déjà terminé (note
+ *     enregistrée) ne repasse jamais en échec : une erreur survenue après
+ *     l'enregistrement (Label, attestation) est journalisée et alertée.
+ *  3. Jobs bloqués (depuis le 14/10/2026) : « en cours » depuis plus de
+ *     10 minutes, un job a été interrompu (redémarrage). Il est remis en file
+ *     s'il lui reste une tentative (celle qu'il a consommée est déjà comptée),
+ *     sinon FAILED définitif (`staleRunningAction`).
+ *  4. Un seul calcul en file par déménageur : la lecture « déjà en file ? » et
+ *     la création se font sous un verrou propre au déménageur (en production, un
+ *     verrou de transaction Postgres), sûr face à deux demandes simultanées — y
+ *     compris pour les relances programmées après une panne. Une demande
+ *     manuelle avance un calcul programmé plus tard, avec SES réglages.
+ *  5. Un calcul n'écrit sa fin que si le job est toujours le sien (RUNNING, même
+ *     tentative) : repris ailleurs entre-temps, son résultat est abandonné. Un
+ *     signal de vie, rafraîchi chaque minute pendant le calcul, fait foi pour
+ *     la reprise des jobs bloqués ; un processus ne reprend jamais un job qu'il
+ *     est lui-même en train de calculer.
  */
 
 export type JobStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED_PARTIAL" | "FAILED" | "CANCELED";
@@ -37,6 +53,14 @@ export function afterProviderFailure(
 ): { status: "PENDING"; scheduledAt: Date } | { status: "FAILED" } {
   if (job.attempts >= job.maxAttempts) return { status: "FAILED" };
   return { status: "PENDING", scheduledAt: new Date(now.getTime() + retryDelayMs(job.attempts)) };
+}
+
+/** Un calcul dure 30 à 60 s : « en cours » depuis plus de 10 minutes, il a été interrompu. */
+export const STALE_RUNNING_MS = 10 * 60 * 1000;
+
+/** Ce que devient un job resté « en cours » plus de `STALE_RUNNING_MS`. */
+export function staleRunningAction(job: Pick<ScoringJob, "attempts" | "maxAttempts">): "requeue" | "fail" {
+  return job.attempts >= job.maxAttempts ? "fail" : "requeue";
 }
 
 /** Le contrat minimal d'un stockage de jobs. */

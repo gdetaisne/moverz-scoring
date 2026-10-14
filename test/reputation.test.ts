@@ -134,6 +134,30 @@ describe("vigilance", () => {
     const v = await deriveVigilanceSnapshot(reviews, { llm: [fakeLlm(null), fakeLlm(null)] });
     assert.equal(v.method, "keywords");
     assert.equal(v.categories.find((c) => c.id === "vol")?.reviewCount, 1);
+    // Depuis le 14/10/2026 : le repli est tracé.
+    assert.equal(v.llmFallback, true);
+    assert.equal(v.fallbackReason, "llm_failed: aucun modèle n'a répondu");
+  });
+
+  it("modèle qui lève (délai dépassé) : mots-clés, sans erreur, repli tracé", async () => {
+    const reviews = [...reviewsOf(19), review({ rating: 2, text: "Un carton disparu pendant le trajet, jamais retrouvé malgré nos relances." })];
+    const timeout: LlmClient = {
+      provider: "lent",
+      model: "lent",
+      completeJson: async () => {
+        throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      },
+    };
+    const v = await deriveVigilanceSnapshot(reviews, { llm: [timeout] });
+    assert.equal(v.method, "keywords");
+    assert.equal(v.llmFallback, true);
+  });
+
+  it("sans modèle fourni : mots-clés, pas de repli compté", async () => {
+    const reviews = [...reviewsOf(19), review({ rating: 2, text: "Un carton disparu pendant le trajet, jamais retrouvé malgré nos relances." })];
+    const v = await deriveVigilanceSnapshot(reviews);
+    assert.equal(v.llmFallback, false);
+    assert.equal(v.fallbackReason, "no_llm_configured");
   });
 });
 

@@ -1,4 +1,4 @@
-import { parseJsonLoose, REVIEWS_LLM_MODELS, type LlmClient, type LlmJsonResult } from "./client.js";
+import { parseJsonLoose, REVIEWS_LLM_MODELS, REVIEWS_LLM_TIMEOUT_MS, type LlmClient, type LlmJsonResult } from "./client.js";
 
 /**
  * Clients HTTP réels (OpenAI, Anthropic). La clé est passée explicitement :
@@ -25,7 +25,7 @@ export function createOpenAiClient(apiKey: string, model: string = REVIEWS_LLM_M
             temperature: 0.1,
             response_format: { type: "json_object" },
           }),
-          signal: AbortSignal.timeout(45_000),
+          signal: AbortSignal.timeout(REVIEWS_LLM_TIMEOUT_MS),
         });
         if (!response.ok) return null;
         const raw = (await response.json()) as {
@@ -58,7 +58,7 @@ export function createAnthropicClient(apiKey: string, model: string = REVIEWS_LL
             temperature: 0.1,
             messages: [{ role: "user", content: prompt }],
           }),
-          signal: AbortSignal.timeout(45_000),
+          signal: AbortSignal.timeout(REVIEWS_LLM_TIMEOUT_MS),
         });
         if (!response.ok) return null;
         const raw = (await response.json()) as {

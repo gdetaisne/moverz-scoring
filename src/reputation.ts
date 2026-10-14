@@ -312,13 +312,22 @@ export async function deriveVigilanceSnapshot(
 
   let categories = buildHeuristicVigilance(authentic);
   let method: VigilanceSnapshot["method"] = "keywords";
+  // Depuis le 14/10/2026 : un modèle en échec (délai, réseau, réponse illisible)
+  // ne fait jamais échouer le calcul ; le repli sur les mots-clés est tracé.
+  let fallbackReason: string | null = null;
+  let llmFallback = false;
   if (concerns.length > 0 && options.llm && options.llm.length > 0) {
     const answer = await completeJsonWithFallback(options.llm, buildVigilancePrompt(concerns), { maxTokens: 1200 });
     const fromLlm = answer ? categoriesFromLlmAnswer(answer.json, concerns.length, authentic.length) : null;
     if (fromLlm) {
       categories = fromLlm;
       method = "llm";
+    } else {
+      llmFallback = true;
+      fallbackReason = answer ? "llm_failed: réponse inexploitable" : "llm_failed: aucun modèle n'a répondu";
     }
+  } else if (concerns.length > 0) {
+    fallbackReason = "no_llm_configured";
   }
 
   return {
@@ -327,5 +336,7 @@ export async function deriveVigilanceSnapshot(
     categories,
     totalAuthenticReviews: authentic.length,
     method,
+    fallbackReason,
+    llmFallback,
   };
 }

@@ -97,6 +97,60 @@ describe("orchestration stricte", () => {
     assert.equal(r.isReliable, true);
   });
 
+  it("panne ou verdict (14/10/2026) : chaque échec dit sa nature", async () => {
+    const reliable = await computeScore(input());
+    assert.equal(reliable.reliabilityDetails.failureKind, null);
+
+    const registryDown = await computeScore(
+      input({ registry: registry({ pappers: pappers({ available: false, companyFound: false, financialScore: null, juridicalScore: null, error: "HTTP 503", errorKind: "http_error" }) }) }),
+    );
+    assert.equal(registryDown.reliabilityDetails.criticalSources.registry.failure, "outage");
+    assert.equal(registryDown.reliabilityDetails.failureKind, "outage");
+
+    const notFound = await computeScore(
+      input({ registry: registry({ pappers: pappers({ available: false, companyFound: false, financialScore: null, juridicalScore: null, error: "introuvable", errorKind: "not_found" }) }) }),
+    );
+    assert.equal(notFound.reliabilityDetails.failureKind, "verdict");
+
+    const quota = await computeScore(input({ reviews: reviewsSnapshot([], { available: false, error: "quota dépassé" }) }));
+    assert.equal(quota.reliabilityDetails.failureKind, "outage");
+
+    const offTrade = reviewsOf(30, { text: "Syndic réactif, les charges de la copropriété sont enfin claires et bien suivies." });
+    const horsMetier = await computeScore(input({ google: google({ name: "Cabinet Gestion Exemple" }), reviews: reviewsSnapshot(offTrade) }));
+    assert.equal(horsMetier.reliabilityDetails.failureKind, "verdict");
+  });
+
+  it("entreprise fermée, procédure collective, hors registre des transporteurs : verdicts, même avec les avis en panne", async () => {
+    const reviewsDown = reviewsSnapshot([], { available: false, error: "HTTP 503" });
+    const closed = await computeScore(input({ reviews: reviewsDown, registry: registry({ sireneClosed: true }) }));
+    assert.equal(closed.reliabilityDetails.failureKind, "verdict");
+    const procedure = await computeScore(
+      input({ reviews: reviewsDown, registry: registry({ pappers: pappers({ raw: { procedure_collective_en_cours: true } }) }) }),
+    );
+    assert.equal(procedure.reliabilityDetails.failureKind, "verdict");
+    const offRegister = await computeScore(
+      input({ reviews: reviewsDown, registry: registry({ transportRegister: sitr({ inMarchandises: false, marchandises: null, matched: false, matchKind: "none" }) }) }),
+    );
+    assert.equal(offRegister.reliabilityDetails.failureKind, "verdict");
+    const healthy = await computeScore(input({ reviews: reviewsDown }));
+    assert.equal(healthy.reliabilityDetails.failureKind, "outage");
+  });
+
+  it("collecte d'avis amputée (14/10/2026) : pas de note, c'est une panne", async () => {
+    const r = await computeScore(input({ reviews: reviewsSnapshot(reviewsOf(10), { incomplete: true }) }));
+    assert.equal(r.globalScore, null);
+    assert.equal(r.isReliable, false);
+    assert.deepEqual(r.reliabilityDetails.missingComponents, ["reputation", "vigilance"]);
+    assert.equal(r.reliabilityDetails.criticalSources.reviews.failure, "outage");
+    assert.equal(r.reliabilityDetails.failureKind, "outage");
+    assert.match(r.reliabilityError ?? "", /Avis: Lecture des avis amputée/);
+  });
+
+  it("la méthode de la vigilance est écrite dans le détail", async () => {
+    const r = await computeScore(input());
+    assert.deepEqual(r.details.vigilance, { method: "keywords", fallbackReason: null, llmFallback: false });
+  });
+
   it("la santé de l'entreprise est extraite du registre et le motif principal est calculé", async () => {
     const r = await computeScore(
       input({ registry: registry({ pappers: pappers({ raw: { procedure_collective_en_cours: true, procedures_collectives: [{ type: "Redressement judiciaire" }] } }) }) }),

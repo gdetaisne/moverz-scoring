@@ -10,6 +10,14 @@ import {
 import type { LlmClient } from "./llm/client.js";
 import { assessGoogleTrade, type GoogleTradeVerdict } from "./google-trade.js";
 import { motifPrincipal, type Motif } from "./motif.js";
+import {
+  classifyUnreliability,
+  companyVerdictList,
+  googleFailure,
+  pappersFailure,
+  SEARCHAPI_INCOMPLETE_ERROR,
+  searchApiFailure,
+} from "./outage-policy.js";
 import type { RegistrySnapshot, ScoringProviders } from "./ports.js";
 import { deriveReputationSnapshot, deriveVigilanceSnapshot } from "./reputation.js";
 import { selectReviewsWindow } from "./review-window.js";
@@ -41,6 +49,10 @@ import type {
  * Une fiche Google « hors métier » (ses avis ne parlent pas de déménagement,
  * `google-trade.ts`) n'est pas celle d'un déménageur : sa composante Google est
  * retirée, et il n'y a pas de note globale.
+ *
+ * Depuis le 14/10/2026, chaque échec dit sa nature (`outage-policy.ts`) : panne
+ * technique ou verdict de fond. Une collecte d'avis amputée est une panne : elle
+ * ne note pas.
  */
 
 export const ALGORITHM_VERSION = "legacy-compatible-v1";
@@ -84,6 +96,8 @@ export interface ScoringResult {
     sireneClosed: boolean;
     /** La fiche Google décrit-elle un déménageur ? `offTrade` = non : note non fiable. Null sans avis collectés. */
     googleTrade: GoogleTradeVerdict | null;
+    /** Méthode réellement utilisée par la vigilance, et raison d'un repli sur les mots-clés. */
+    vigilance: { method: VigilanceSnapshot["method"] | null; fallbackReason: string | null; llmFallback: boolean };
   };
 }
 
@@ -127,10 +141,14 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
   const { google, reviews } = input;
   const warnings: string[] = [];
 
-  // Les avis ne comptent que s'ils viennent de la fiche trouvée ET ont été collectés.
-  const reviewsUsable = google.available && reviews.available;
+  // Les avis ne comptent que s'ils viennent de la fiche trouvée ET ont été collectés
+  // en entier : une collecte amputée (pagination perdue) est une panne, pas une
+  // fiche à moins d'avis (14/10/2026).
+  const reviewsIncomplete = reviews.available && reviews.incomplete;
+  const reviewsUsable = google.available && reviews.available && !reviewsIncomplete;
+  const reviewsError = reviewsIncomplete ? SEARCHAPI_INCOMPLETE_ERROR : reviews.error;
   const window = reviewsUsable ? selectReviewsWindow(reviews.reviews, now) : null;
-  if (reviews.available && reviews.incomplete) warnings.push("reviews_incomplete");
+  if (reviewsIncomplete) warnings.push("reviews_incomplete:treated_as_outage");
 
   const reputation: ReputationSnapshot = window
     ? {
@@ -195,12 +213,19 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
   });
 
   const isReliable = strict.globalScore !== null;
+  const registryHealth = pappers.available ? extractCompanyHealth(pappers.raw) : null;
+  const failures = {
+    registry: pappersFailure(pappers),
+    google: googleFailure(google),
+    // Sans fiche Google, c'est Google qui porte la cause, pas la collecte.
+    reviews: google.available ? searchApiFailure({ available: reviewsUsable, error: reviewsError }) : null,
+  };
   const reliabilityError = isReliable
     ? null
     : [
         !pappers.available ? `Registre: ${pappers.error ?? "indisponible"}` : null,
         !google.available ? `Google: ${google.error ?? "indisponible"}` : null,
-        google.available && !reviews.available ? `Avis: ${reviews.error ?? "indisponibles"}` : null,
+        google.available && !reviewsUsable ? `Avis: ${reviewsError ?? "indisponibles"}` : null,
         googleTrade?.offTrade
           ? `Fiche Google hors métier : ${googleTrade.tradeReviews}/${googleTrade.textReviews} avis parlent de déménagement (« ${googleTrade.ficheName ?? "sans nom"} »)`
           : `Composants manquants: ${strict.missingComponents.join(", ")}`,
@@ -217,12 +242,28 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
     reliabilityError,
     reliabilityDetails: {
       criticalSources: {
-        registry: { ok: pappers.available, error: pappers.error },
-        google: { ok: google.available, error: google.error },
-        reviews: { ok: reviewsUsable, error: reviewsUsable ? null : (reviews.error ?? "fiche Google indisponible") },
+        registry: { ok: pappers.available, error: pappers.error, failure: failures.registry },
+        google: { ok: google.available, error: google.error, failure: failures.google },
+        reviews: {
+          ok: reviewsUsable,
+          error: reviewsUsable ? null : (reviewsError ?? "fiche Google indisponible"),
+          failure: failures.reviews,
+        },
       },
       missingComponents: strict.missingComponents,
       warnings,
+      failureKind: classifyUnreliability({
+        isReliable,
+        sources: [failures.registry, failures.google, failures.reviews],
+        // Tout constat de fond interdit de garder l'ancienne note, même si une
+        // source est en panne le même jour.
+        verdicts: companyVerdictList({
+          googleOffTrade: googleTrade?.offTrade === true,
+          companyClosed: sireneClosed || (registryHealth != null && (registryHealth.cessee || registryHealth.radiee)),
+          collectiveProcedure: registryHealth?.procedureCollectiveEnCours === true,
+          transportRegisterZero: sitrVerdict === "zero",
+        }),
+      }),
     },
     weights: strict.weights,
     reputation,
@@ -237,6 +278,11 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
       sitrJuridicalVerdict: sitrVerdict,
       sireneClosed,
       googleTrade,
+      vigilance: {
+        method: vigilance.method ?? null,
+        fallbackReason: vigilance.fallbackReason ?? null,
+        llmFallback: vigilance.llmFallback === true,
+      },
     },
   };
 }

@@ -124,6 +124,14 @@ export interface VigilanceSnapshot {
   totalAuthenticReviews: number;
   /** `llm` si la classification d'un modèle a remplacé l'heuristique par mots-clés. */
   method?: "keywords" | "llm";
+  /**
+   * Pourquoi les mots-clés ont servi alors qu'un modèle pouvait être appelé :
+   * `llm_failed: …` (modèle en échec, délai dépassé, réponse illisible) ou
+   * `no_llm_configured`. Null sinon (depuis le 14/10/2026).
+   */
+  fallbackReason?: string | null;
+  /** Vrai quand un modèle fourni a échoué et que les mots-clés l'ont remplacé. */
+  llmFallback?: boolean;
   windowMonths?: 12 | 24;
   reviewsCount12m?: number;
   reviewsCount24m?: number;
@@ -131,12 +139,28 @@ export interface VigilanceSnapshot {
 
 // ─── Résultat ───────────────────────────────────────────────────────────────
 
+/**
+ * Pourquoi une source critique manque (depuis le 14/10/2026) : `outage` = panne
+ * technique (réseau, HTTP, quota, délai, clé absente, lecture d'avis amputée),
+ * qui ne dit rien de l'entreprise ; `verdict` = constat de fond (entreprise
+ * introuvable, fiche Google non prouvée, absente, sans correspondance, hors métier).
+ */
+export type SourceFailureKind = "outage" | "verdict";
+
+export interface CriticalSourceStatus {
+  ok: boolean;
+  error: string | null;
+  failure?: SourceFailureKind | null;
+}
+
 export interface ReliabilityDetails {
   criticalSources: {
-    registry: { ok: boolean; error: string | null };
-    google: { ok: boolean; error: string | null };
-    reviews: { ok: boolean; error: string | null };
+    registry: CriticalSourceStatus;
+    google: CriticalSourceStatus;
+    reviews: CriticalSourceStatus;
   };
   missingComponents: ScoreAxis[];
   warnings: string[];
+  /** Nature de l'échec d'une note non fiable (`src/outage-policy.ts`) ; null pour une note fiable. */
+  failureKind?: SourceFailureKind | null;
 }
