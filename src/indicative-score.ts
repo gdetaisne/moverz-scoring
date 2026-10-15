@@ -4,8 +4,8 @@ import type { ScoreAxis } from "./types.js";
 /**
  * La note INDICATIVE d'une entreprise inconnue (analyse d'un devis reçu
  * ailleurs) — à ne pas confondre avec le score Moverz. L'outil « Vérifier un
- * déménageur » (moverz.fr) n'affiche pas cette note : il calcule le score Moverz
- * à la demande, ou rien.
+ * déménageur » (moverz.fr) n'affiche pas cette note : il montre le score Moverz
+ * officiel (celui de la notation), ou dit qu'il n'est pas disponible.
  *
  * Mêmes formules, mêmes poids. Mais on ne passe pas par `buildStrictGlobalScore` :
  * pour un déménageur que nous n'avons jamais noté, réputation et vigilance

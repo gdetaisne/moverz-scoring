@@ -29,8 +29,8 @@ La méthode expliquée aux particuliers, avec les chiffres de la sélection : [m
 - File de calcul : claim atomique, retry exponentiel, jobs orphelins : [`src/jobs.ts`](src/jobs.ts), [`src/score-watch.ts`](src/score-watch.ts)
 - Tests : [`test/`](test/), par exemple [`test/compute.test.ts`](test/compute.test.ts)
 
-**4. Le même score, à la demande.**
-- Sur moverz.fr, l'outil « Vérifier un déménageur » calcule le Score Moverz de n'importe quelle entreprise, inscrite chez Moverz ou non, avec les mêmes cinq critères, les mêmes poids et les mêmes formules (depuis le 14/10/2026). Un Score de moins de 30 jours est repris, sinon il est recalculé. Ce qui diffère de la notation habituelle (sources lues, plafonds, fiches héritées) est décrit dans [`docs/architecture.md`](docs/architecture.md#le-score-à-la-demande) ; le cœur du calcul, lui, n'a pas changé.
+**4. Un seul score, une seule méthode.**
+- Sur moverz.fr, l'outil « Vérifier un déménageur » ne calcule aucune note à sa façon : il montre le Score Moverz officiel, produit par la notation habituelle (mêmes critères, mêmes poids, mêmes formules, mêmes sources). Une entreprise que la base ne connaît pas reçoit une fiche et est notée par cette même notation ; une note de plus de 30 jours est recalculée en arrière-plan. Détail dans [`docs/architecture.md`](docs/architecture.md#un-seul-score--loutil-vérifier-un-déménageur) ; aucune règle du cœur n'a changé.
 
 **4. Du métier, pas seulement du code.** [`docs/METIER.md`](docs/METIER.md) : ce qui rend un déménageur fiable, pourquoi chaque poids, licences de transport, procédures collectives, pourquoi la casse et le vol pèsent le plus, les seuils révisés sur mesures réelles, le « motif principal ». Architecture : [`docs/architecture.md`](docs/architecture.md).
 
