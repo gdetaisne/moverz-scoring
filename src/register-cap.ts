@@ -12,8 +12,13 @@
  *         nom de commune) et même code postal, ou même commune dans le même département ;
  *      b) gestionnaire de transport du registre égal au dirigeant connu, dans le même
  *         département, ET un mot du nom en commun ou la même commune.
- *    Une correspondance probable lève le plafond : avertissement
- *    `sitr_successor_candidate:<siren>` et signalement à l'équipe pour revue.
+ *    Les mots génériques (métier, forme, régions, départements, gentilés) ne comptent
+ *    jamais comme mots du nom. UNE correspondance probable lève le plafond : avertissement
+ *    `sitr_successor_candidate:<siren>` et signalement à l'équipe pour revue. Plusieurs :
+ *    ambiguïté, le plafond reste, `sitr_successor_ambiguous:<siren>+<siren>`, même alerte.
+ *    Même gérant et même commune SANS mot du nom en commun (souvent une société sœur) : le
+ *    plafond reste, `sitr_successor_to_review:<siren>`, alerte pour vérification (option A,
+ *    Guillaume, 15/10/2026).
  * 3. Annuaire du registre illisible au moment de la recherche : pas de plafond (Guillaume,
  *    15/10/2026), le calcul est refait au passage suivant.
  *
@@ -27,8 +32,8 @@
 
 export const REGISTER_ABSENT_MAX_SCORE = 65;
 
-/** Combien de correspondances au plus sont gardées (les premières, par ordre de preuve). */
-export const SITR_SUCCESSOR_MAX_CANDIDATES = 3;
+/** Combien de correspondances au plus sont gardées pour l'alerte (les premières, par ordre de preuve). */
+export const SITR_SUCCESSOR_MAX_CANDIDATES = 5;
 
 export type SitrDirectoryEntry = {
   siren: string;
@@ -40,7 +45,18 @@ export type SitrDirectoryEntry = {
   register: "marchandises" | "commissionnaires";
 };
 
-export type SitrSuccessorReason = "same_name_same_place" | "same_manager_same_department";
+/**
+ * `same_name_same_place` et `same_manager_same_department` (gérant + mot distinctif du nom en
+ * commun) lèvent le plafond. `same_manager_same_commune` (gérant + même commune, sans mot du
+ * nom en commun : souvent une société sœur) ne le lève pas : l'équipe vérifie (option A de
+ * Guillaume, 15/10/2026).
+ */
+export type SitrSuccessorReason = "same_name_same_place" | "same_manager_same_department" | "same_manager_same_commune";
+
+/** Une correspondance qui lève le plafond (pas une simple fiche « à vérifier »). */
+export function liftsRegisterCap(candidate: Pick<SitrSuccessorCandidate, "reason">): boolean {
+  return candidate.reason !== "same_manager_same_commune";
+}
 
 export type SitrSuccessorCandidate = {
   siren: string;
@@ -49,6 +65,8 @@ export type SitrSuccessorCandidate = {
   commune: string | null;
   register: SitrDirectoryEntry["register"];
   reason: SitrSuccessorReason;
+  /** Ce qui a fait correspondre, en clair (pour l'équipe). */
+  evidence: string;
 };
 
 /** Une personne connue de l'entreprise : nom de famille et prénom(s). */
@@ -71,24 +89,46 @@ const LEGAL_FORM_TOKENS = new Set([
   "SOCIETE",
 ]);
 
-/** Mots qui ne désignent pas une entreprise à eux seuls : un nom fait d'eux seuls ne prouve rien. */
-const GENERIC_NAME_TOKENS = new Set([
-  "DEMENAGEMENT",
-  "DEMENAGEUR",
-  "TRANSPORT",
-  "SERVICE",
-  "LOGISTIQUE",
-  "EXPRES",
-  "EXPRESS",
-  "FRANCE",
-  "ET",
-  "DE",
-  "DU",
-  "DES",
-  "LA",
-  "LE",
-  "LES",
-]);
+/**
+ * Mots qui ne désignent pas une entreprise à eux seuls (relecture du 15/10/2026 :
+ * le rejeu sur la production rapprochait six fiches « France Déménagement » de trois SIREN
+ * d'un même réseau). Métier, formes, mots de liaison, et noms de régions, de départements
+ * et leurs gentilés : un nom fait seulement de ces mots ne correspond à personne par le nom.
+ */
+const GENERIC_NAME_WORDS = [
+  // métier et formes
+  "demenagement", "demenagements", "demenageur", "demenageurs", "demenage", "dem", "transport", "transports",
+  "transporteur", "france", "service", "services", "groupe", "group", "sas", "sasu", "sarl", "eurl", "sa", "international",
+  "internationale", "express", "expres", "logistique", "logistic", "logistics", "garde", "meuble", "meubles",
+  "garde-meubles", "stockage", "entreprise", "entreprises", "ets", "et", "de", "du", "des", "la", "le", "les", "en", "au",
+  "aux", "sur", "son", "fils", "freres", "national", "nationale", "europe", "european", "moving", "move", "movers",
+  "pro", "solution", "solutions", "agence", "reseau", "plus", "no", "and",
+  // régions et gentilés
+  "auvergne", "rhone", "alpes", "bourgogne", "franche", "comte", "bretagne", "breton", "bretons", "centre", "val",
+  "loire", "corse", "grand", "est", "hauts", "ile", "normandie", "normand", "normands", "nouvelle", "aquitaine",
+  "occitanie", "pays", "provence", "cote", "azur", "alsace", "alsacien", "lorraine", "champagne", "ardenne", "picardie",
+  "limousin", "poitou", "charentes", "languedoc", "roussillon", "midi", "pyrenees", "savoie", "savoyard", "savoyards",
+  "dauphine", "basque", "parisien", "parisienne", "francilien", "lyonnais", "marseillais", "nord", "sud", "ouest",
+  "outre", "mer", "region", "regional", "regionale", "province", "provinces",
+  // départements (mots)
+  "ain", "aisne", "allier", "haute", "hautes", "haut", "bas", "basse", "basses", "maritime", "maritimes", "ardeche",
+  "ardennes", "ariege", "aube", "aude", "aveyron", "bouches", "calvados", "cantal", "charente", "cher", "correze",
+  "cote", "cotes", "armor", "creuse", "dordogne", "doubs", "drome", "eure", "finistere", "gard", "garonne", "gers",
+  "gironde", "herault", "vilaine", "indre", "isere", "jura", "landes", "loir", "atlantique", "loiret", "lot", "lozere",
+  "maine", "manche", "marne", "mayenne", "meurthe", "moselle", "meuse", "morbihan", "nievre", "oise", "orne", "calais",
+  "puy", "dome", "rhin", "saone", "sarthe", "paris", "seine", "yvelines", "sevres", "somme", "tarn", "vaucluse",
+  "vendee", "vendeen", "vienne", "vosges", "yonne", "territoire", "belfort", "essonne", "hauts", "denis", "marne",
+  "oise", "guadeloupe", "martinique", "guyane", "reunion", "mayotte", "var", "alpes",
+];
+
+const GENERIC_NAME_TOKENS = new Set(
+  GENERIC_NAME_WORDS.flatMap((word) =>
+    foldUpper(word)
+      .split(" ")
+      .filter(Boolean)
+      .map(tokenOf),
+  ),
+);
 
 /** Les mots d'un nom qui désignent l'entreprise : ni génériques, ni noms de commune, ni trop courts. */
 function distinctiveTokens(normalized: string, communeTokens: ReadonlySet<string>): string[] {
@@ -159,7 +199,11 @@ export function findSitrSuccessorCandidates(input: {
   ownSiren: string | null;
   /** Noms de la fiche : nom commercial, raison sociale, dénomination du registre des entreprises. */
   names: Array<string | null | undefined>;
-  /** Lieux de la fiche : adresse du déménageur, siège connu. */
+  /**
+   * Lieux de la fiche : l'adresse du déménageur EN PREMIER, puis le siège connu. La preuve
+   * par le gérant ne regarde que l'adresse de la fiche (le siège d'un réseau ou d'une
+   * holding est ailleurs).
+   */
   places: Array<{ postalCode: string | null | undefined; commune: string | null | undefined }>;
   /** Dirigeants connus (registre des entreprises). */
   managers: KnownPerson[];
@@ -177,9 +221,17 @@ export function findSitrSuccessorCandidates(input: {
   const departments = new Set(
     input.places.map((p) => departmentOfPostalCode(p.postalCode)).filter((d): d is string => d != null)
   );
+  const fichePlace = input.places[0];
+  const ficheDepartment = departmentOfPostalCode(fichePlace?.postalCode);
+  const ficheCommune = normalizeCommune(fichePlace?.commune);
+  // Le nom du gérant dans un nom de société ne prouve rien : c'est sa personne, pas son
+  // entreprise (rejeu du 15/10/2026 : un gérant à plusieurs sociétés rapprochait chacune).
+  const personTokens = new Set(
+    input.managers.flatMap((p) => normalizeCompanyName(`${p.lastName} ${p.firstNames ?? ""}`).split(" ")).filter(Boolean)
+  );
 
   const found = new Map<string, SitrSuccessorCandidate>();
-  const add = (entry: SitrDirectoryEntry, reason: SitrSuccessorReason) => {
+  const add = (entry: SitrDirectoryEntry, reason: SitrSuccessorReason, evidence: string) => {
     if (found.has(entry.siren)) return;
     found.set(entry.siren, {
       siren: entry.siren,
@@ -188,6 +240,7 @@ export function findSitrSuccessorCandidates(input: {
       commune: entry.commune,
       register: entry.register,
       reason,
+      evidence,
     });
   };
 
@@ -205,24 +258,35 @@ export function findSitrSuccessorCandidates(input: {
     const entryTokens = new Set(distinctiveTokens(entryName, excluded));
     const sameName = entryTokens.size > 0 && normalizedNames.some((n) => n === entryName && distinctiveTokens(n, excluded).length > 0);
     if (samePlace && sameName) {
-      add(entry, "same_name_same_place");
+      add(entry, "same_name_same_place", `même nom (« ${entry.raisonSociale} »), même ${postalCodes.has((entry.postalCode ?? "").replace(/\D/g, "")) ? "code postal" : "commune"}`);
       continue;
     }
     // Un gérant homonyme ne suffit pas seul : il faut aussi un mot du nom en commun, ou la
     // même commune dans le même département.
-    const nameOverlap = normalizedNames.some((n) => distinctiveTokens(n, excluded).some((w) => entryTokens.has(w)));
+    const sharedWord = normalizedNames
+      .flatMap((n) => distinctiveTokens(n, excluded))
+      .find((w) => entryTokens.has(w) && !personTokens.has(w));
+    const nameOverlap = sharedWord != null;
+    const managerSameDepartment = department != null && department === ficheDepartment;
+    const managerSameCommune =
+      managerSameDepartment && entry.commune != null && ficheCommune.length > 0 && normalizeCommune(entry.commune) === ficheCommune;
     if (
-      sameDepartment &&
-      (nameOverlap || sameCommune) &&
+      managerSameDepartment &&
+      (nameOverlap || managerSameCommune) &&
       input.managers.some((person) => personMatchesRegisterName(entry.manager, person))
     ) {
-      add(entry, "same_manager_same_department");
+      add(
+        entry,
+        nameOverlap ? "same_manager_same_department" : "same_manager_same_commune",
+        `même gérant (${entry.manager}), ${nameOverlap ? `mot du nom en commun « ${sharedWord} »` : `même commune (${entry.commune}), aucun mot du nom en commun : à vérifier`}`,
+      );
     }
   }
 
   const all = [...found.values()];
-  // La preuve par le nom et le lieu passe devant celle par le dirigeant.
-  all.sort((a, b) => (a.reason === b.reason ? a.siren.localeCompare(b.siren) : a.reason === "same_name_same_place" ? -1 : 1));
+  // Le nom et le lieu d'abord, puis le gérant avec un mot du nom, puis les fiches à vérifier.
+  const rank: Record<SitrSuccessorReason, number> = { same_name_same_place: 0, same_manager_same_department: 1, same_manager_same_commune: 2 };
+  all.sort((a, b) => rank[a.reason] - rank[b.reason] || a.siren.localeCompare(b.siren));
   return all.slice(0, SITR_SUCCESSOR_MAX_CANDIDATES);
 }
 
@@ -230,21 +294,37 @@ export function findSitrSuccessorCandidates(input: {
  * Le plafond de la note globale. `successors` : null quand la recherche n'a pas pu se
  * faire (annuaire du registre illisible au moment du calcul) : PAS de plafond (Guillaume,
  * 15/10/2026, même logique que les pannes de source) ; le calcul est refait au passage suivant.
+ *
+ * Un SEUL autre SIREN qui lève le plafond (`liftsRegisterCap`) le lève. Plusieurs (relecture
+ * du 15/10/2026 : un réseau, des agences homonymes) : on ne sait pas lequel, le plafond reste,
+ * `ambiguous` le dit. Les fiches seulement « à vérifier » (même gérant, même commune, aucun
+ * mot du nom en commun) ne lèvent rien. Dans les deux cas l'équipe est prévenue.
  */
 export function applyRegisterCap(input: {
   globalScore: number | null;
   verdict: "ok" | "zero" | "unknown";
   successors: SitrSuccessorCandidate[] | null;
-}): { score: number | null; capped: boolean; liftedBySuccessor: boolean } {
-  if (input.verdict !== "zero") return { score: input.globalScore, capped: false, liftedBySuccessor: false };
-  if (input.successors == null) return { score: input.globalScore, capped: false, liftedBySuccessor: false };
-  if (input.successors.length > 0) {
-    return { score: input.globalScore, capped: false, liftedBySuccessor: true };
-  }
-  if (input.globalScore == null || input.globalScore <= REGISTER_ABSENT_MAX_SCORE) {
-    return { score: input.globalScore, capped: false, liftedBySuccessor: false };
-  }
-  return { score: REGISTER_ABSENT_MAX_SCORE, capped: true, liftedBySuccessor: false };
+}): { score: number | null; capped: boolean; liftedBySuccessor: boolean; ambiguous: boolean } {
+  const keep = { score: input.globalScore, capped: false, liftedBySuccessor: false, ambiguous: false };
+  if (input.verdict !== "zero") return keep;
+  if (input.successors == null) return keep;
+  const lifting = input.successors.filter(liftsRegisterCap);
+  if (lifting.length === 1) return { ...keep, liftedBySuccessor: true };
+  const ambiguous = lifting.length > 1;
+  if (input.globalScore == null || input.globalScore <= REGISTER_ABSENT_MAX_SCORE) return { ...keep, ambiguous };
+  return { score: REGISTER_ABSENT_MAX_SCORE, capped: true, liftedBySuccessor: false, ambiguous };
+}
+
+/** Les avertissements d'une recherche d'autre SIREN : levée, ambiguïté, fiches à vérifier. */
+export function registerSuccessorWarnings(successors: SitrSuccessorCandidate[] | null): string[] {
+  if (!successors) return [];
+  const lifting = successors.filter(liftsRegisterCap);
+  const toReview = successors.filter((c) => !liftsRegisterCap(c));
+  return [
+    ...(lifting.length === 1 ? [`sitr_successor_candidate:${lifting[0].siren}`] : []),
+    ...(lifting.length > 1 ? [`sitr_successor_ambiguous:${lifting.map((c) => c.siren).join("+")}`] : []),
+    ...toReview.map((c) => `sitr_successor_to_review:${c.siren}`),
+  ];
 }
 
 function readString(value: unknown): string | null {

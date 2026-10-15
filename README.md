@@ -46,7 +46,7 @@ La méthode expliquée aux particuliers, avec les chiffres de la sélection : [m
 | Réputation | 20 % | (1 − part d'avis négatifs) × 100 sur les avis authentiques ; plafonds 60 / 75 / 88 sous 5 / 10 / 25 avis |
 | Vigilance | 35 % | 6 catégories pondérées ; par catégorie, moins de 1 % des avis = 100, de 1 à 3 % = 50, plus de 3 % = 0 ; aucun avis retenu = 50 |
 
-Au-delà des cinq axes : une absence **confirmée** au registre des transporteurs plafonne la note globale à **65** (sauf si l'entreprise y figure sous un autre SIREN ; un registre illisible ne pénalise pas).
+Au-delà des cinq axes : une absence **confirmée** au registre des transporteurs plafonne la note globale à **65** (sauf si l'entreprise y figure sous un seul autre SIREN, sans ambiguïté ; un registre illisible ne pénalise pas).
 
 Libellés : Excellent ≥ 85 · Bon ≥ 70 · Correct ≥ 50 · Fragile ≥ 30 · Critique.
 
@@ -81,7 +81,7 @@ Décisions de Guillaume Stehelin de Taisne. Version des règles : `legacy-compat
 2. **Les négations ne sont plus des incidents (14/10, relu le 15/10).** « Rien de cassé », « jamais en retard », « dans les délais », « devis respecté » ne comptent plus ; « devis » et « tarif » seuls non plus. Mais une négation s'arrête à « mais », « sauf », « par contre » ou à un point, et ne couvre pas un vrai incident : « pas de casse mais trois heures de retard » reste un retard.
 3. **Aucun avis retenu : vigilance 50 (14/10).** Avant : 100, l'absence d'avis valait un sans-faute.
 4. **Plafond Google progressif (14/10).** 75 jusqu'à 10 avis, + 2,5 par avis, plus de plafond à 20 avis.
-5. **Absence au registre des transporteurs : 65 au plus (14/10, précisé le 15/10).** Sauf si l'entreprise y figure sous un autre SIREN comme transporteur de marchandises (l'équipe vérifie) ; un registre ou un annuaire illisible ne pénalise pas, et le calcul est refait 24 h plus tard.
+5. **Absence au registre des transporteurs : 65 au plus (14/10, précisé le 15/10).** Sauf si l'entreprise y figure sous un autre SIREN, un seul, comme transporteur de marchandises (l'équipe vérifie) ; un registre ou un annuaire illisible ne pénalise pas, et le calcul est refait 24 h plus tard. Depuis le 15/10 : les mots génériques (métier, région, département : « France », « Vendée », « Déménagement ») ne rapprochent jamais deux entreprises, et plusieurs SIREN possibles laissent le plafond en place (on ne sait pas lequel). Dans la preuve par le gérant, son propre nom ne compte pas comme mot commun, et seule l'adresse de la fiche compte (pas le siège d'un réseau) ; chaque correspondance dit sa preuve en clair. Et une société sœur (même gérant, même commune, aucun mot du nom en commun) ne lève plus le plafond : l'équipe vérifie la fiche (option A, 15/10).
 6. **Fraîcheur de 90 jours (15/10).** Toute note montrée au client, et toute note plafonnée par le registre, est recalculée tous les 90 jours, avec une fiche Pappers relue ; l'analyse de devis reprend une note de moins de 90 jours.
 7. **La méthode suivie, enregistrée avec chaque note (15/10).** Critère par critère, lisible par l'équipe seulement.
 8. **« Vérifier un déménageur » : en cas de doute, des données fraîches (15/10).** Fiche remise sur la bonne entreprise quand c'est sûr, jamais pour un partenaire sans l'équipe, jamais de seconde fiche ni de note douteuse. Détail : [`docs/METIER.md`](docs/METIER.md) (§ 7, « Un seul Score ») et [`docs/architecture.md`](docs/architecture.md#un-seul-score--loutil-vérifier-un-déménageur).
@@ -96,7 +96,7 @@ Les données de ce dépôt sont fictives : aucune entreprise, aucun SIREN, aucun
 
 ## Chiffres
 
-**Ce dépôt** : 27 modules TypeScript (3 883 lignes non vides), 182 tests (`node:test`, 16 fichiers), une seule dépendance d'exécution (`zod`).
+**Ce dépôt** : 27 modules TypeScript (3 965 lignes non vides), 188 tests (`node:test`, 16 fichiers), une seule dépendance d'exécution (`zod`).
 
 **Le monorepo privé dont il est extrait** (non publié) : 2 505 commits d'avril à octobre 2026, 474 fichiers de tests ; applications API, tunnel client, portail déménageur, back-office. Ce qui n'est pas ici : moteur de prix, base de données, appels HTTP aux fournisseurs, interfaces.
 

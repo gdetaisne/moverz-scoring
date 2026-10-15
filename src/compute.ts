@@ -28,6 +28,7 @@ import {
   identityFromRegistry,
   knownPersonsFromRegistry,
   REGISTER_ABSENT_MAX_SCORE,
+  registerSuccessorWarnings,
   type SitrSuccessorCandidate,
 } from "./register-cap.js";
 import { deriveReputationSnapshot, deriveVigilanceSnapshot } from "./reputation.js";
@@ -287,12 +288,16 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
   // globale plafonnée à 65, sauf si l'entreprise y figure sous un autre SIREN
   // (signalée à l'équipe pour revue). Un registre illisible ne pénalise pas, ni un
   // annuaire illisible (15/10/2026 : en production, le calcul est refait 24 h plus tard).
+  // Un SEUL autre SIREN lève le plafond ; plusieurs = ambiguïté, le plafond reste
+  // (15/10/2026 : un même réseau rapprochait plusieurs fiches de trois sociétés).
+  // Une société sœur (même gérant, même commune, aucun mot du nom en commun) ne lève
+  // rien : fiche à vérifier, `sitr_successor_to_review:<siren>` (option A, 15/10/2026).
   const capVerdict: SitrJuridicalVerdict = transportRegister == null ? "unknown" : sitrVerdict;
   const sitrSuccessors = capVerdict === "zero" ? lookupSitrSuccessors(input) : null;
   if (capVerdict === "zero" && sitrSuccessors == null) warnings.push(SITR_DIRECTORY_UNREAD_WARNING);
-  for (const candidate of sitrSuccessors ?? []) warnings.push(`sitr_successor_candidate:${candidate.siren}`);
   const uncappedScore = strict.globalScore;
   const registerCap = applyRegisterCap({ globalScore: strict.globalScore, verdict: capVerdict, successors: sitrSuccessors });
+  warnings.push(...registerSuccessorWarnings(sitrSuccessors));
   if (registerCap.capped) {
     warnings.push(`sitr_register_cap:${REGISTER_ABSENT_MAX_SCORE}`);
     strict.globalScore = registerCap.score;

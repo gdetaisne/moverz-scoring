@@ -210,6 +210,21 @@ describe("règles du 14/10/2026 dans l'orchestration", () => {
     assert.ok(r.reliabilityDetails.warnings.includes("sitr_successor_candidate:900000002"));
   });
 
+  it("deux autres SIREN plausibles (15/10/2026) : ambigu, le plafond reste, l'avertissement les nomme", async () => {
+    const r = await computeScore({
+      ...strong({
+        pappers: pappers({ financialScore: 100, raw: { siren: "123456789", nom_entreprise: "DEMENAGEMENTS EXEMPLE" } }),
+        transportRegister: offRegister(),
+        transportRegisterDirectory: [directoryEntry, { ...directoryEntry, siren: "900000003", postalCode: "69003" }],
+      }),
+      mover: { companyName: "Déménagements Exemple", siren: "123456789", siret: null, city: "Lyon", postalCode: "69007" },
+    });
+    assert.equal(r.globalScore, 65);
+    assert.equal(r.details.registerCap.capped, true);
+    assert.ok(r.reliabilityDetails.warnings.includes("sitr_successor_ambiguous:900000002+900000003"));
+    assert.ok(!r.reliabilityDetails.warnings.some((w) => w.startsWith("sitr_successor_candidate:")));
+  });
+
   it("registre des transporteurs illisible : aucune pénalité", async () => {
     const r = await computeScore(strong({ transportRegister: null }));
     assert.equal(r.details.registerCap.capped, false);
