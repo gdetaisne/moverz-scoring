@@ -104,3 +104,13 @@ test("401 / réseau : panne d'infra, pas un verdict sur l'entreprise", () => {
     false
   );
 });
+
+test("SIREN corrigé : la fiche Pappers de l'ancienne entreprise n'est jamais reprise", () => {
+  const now = new Date("2026-09-08T00:00:00.000Z");
+  const old = { snapshots: { pappers: snap({ raw: { siren: "111111111" } }) }, computedAt: new Date("2026-08-01T00:00:00.000Z") };
+  assert.equal(pickFreshPappers([old], now, "222222222"), null, "autre SIREN : nouvel appel");
+  assert.ok(pickFreshPappers([old], now, "111111111"), "même SIREN : reprise");
+  assert.ok(pickFreshPappers([old], now), "SIREN attendu inconnu : comportement d'avant");
+  const noSiren = { snapshots: { pappers: snap({ raw: {} }) }, computedAt: old.computedAt };
+  assert.ok(pickFreshPappers([noSiren], now, "222222222"), "fiche sans SIREN lisible : comportement d'avant");
+});

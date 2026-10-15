@@ -47,14 +47,30 @@ function cutoffFrom(now: Date): Date {
   return new Date(now.getTime() - PAPPERS_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
 }
 
+/** Le SIREN de l'entreprise que décrit la fiche Pappers, ou null s'il n'y figure pas. */
+export function pappersSnapshotSiren(snapshot: PappersSnapshot): string | null {
+  const raw = snapshot.raw as { siren?: unknown } | null | undefined;
+  const siren = typeof raw?.siren === "string" ? raw.siren.replace(/\D+/g, "") : "";
+  return siren.length === 9 ? siren : null;
+}
+
+/**
+ * `expectedSiren` : le SIREN actuel de la fiche. Une fiche Pappers d'une AUTRE entreprise
+ * (SIREN corrigé depuis) n'est jamais réutilisée (15/10/2026 : deux fiches dont le SIREN
+ * avait été corrigé étaient notées avec la fiche Pappers de l'ancienne société).
+ */
 export function pickFreshPappers(
   candidates: PappersCandidate[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  expectedSiren?: string | null
 ): FreshPappers | null {
   const cutoff = cutoffFrom(now);
+  const expected = (expectedSiren ?? "").replace(/\D+/g, "");
   for (const candidate of candidates) {
     const previous = (candidate.snapshots as { pappers?: unknown } | null)?.pappers;
     if (!isUsablePappers(previous)) continue;
+    const snapshotSiren = pappersSnapshotSiren(previous);
+    if (expected.length === 9 && snapshotSiren !== null && snapshotSiren !== expected) continue;
     const paidAt = pappersPaidAt(previous, candidate.computedAt);
     if (paidAt < cutoff) continue;
     return { snapshot: previous, paidAt };
