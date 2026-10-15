@@ -40,7 +40,9 @@ export const VIGILANCE_CATEGORIES: ReadonlyArray<{
     id: "prix_modifie",
     label: "Prix modifié",
     weight: 0.1,
-    keywords: ["surfacturation", "supplément", "montant", "devis", "coût", "tarif", "arnaque"],
+    // « devis » et « tarif » seuls ne sont plus des incidents (14/10/2026) :
+    // « plusieurs devis », « préparation du devis » décrivent un parcours normal.
+    keywords: ["surfacturation", "supplément", "montant", "coût", "arnaque"],
   },
   {
     id: "personnel",
@@ -187,19 +189,168 @@ Réponds UNIQUEMENT en JSON:
 }`;
 }
 
-/** Minuscules, sans accents : « Volée » et « volee » se lisent pareil. */
-function foldText(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+/** Minuscules, apostrophes unifiées, accents GARDÉS ; même longueur que `foldText`. */
+function lowerText(text: string): string {
+  return Array.from(text.normalize("NFC"))
+    .map((c) => {
+      const lower = c.toLowerCase();
+      return lower.length === c.length ? lower : c;
+    })
+    .join("")
+    .replace(/[’`]/g, "'");
 }
 
 /**
- * Un mot-clé se cherche comme MOT, pas comme bout de mot : « vol » ne doit pas
- * trouver « volume » ni « volontiers ». Accents ignorés, accords tolérés
- * (« cassé » trouve « cassées », « vol » trouve « vols » et « volé »).
+ * Minuscules, sans accents, apostrophes unifiées : « Volée » et « volee » se lisent pareil.
+ * Caractère par caractère : le texte replié garde la longueur du texte en minuscules
+ * (`lowerText`), pour relire l'accent d'une occurrence.
+ */
+function foldText(text: string): string {
+  return Array.from(lowerText(text))
+    .map((c) => {
+      const bare = c.normalize("NFD").replace(/\p{M}/gu, "");
+      return bare.length === c.length ? bare : c;
+    })
+    .join("");
+}
+
+/**
+ * Un mot-clé se cherche comme MOT, pas comme bout de mot : « vol » ne doit pas trouver
+ * « volume » ni « volontiers » (avant le 08/10/2026, une simple recherche de sous-chaîne
+ * gonflait la catégorie vol, qui pèse 0,3 de la vigilance). Accents ignorés, et accords
+ * tolérés (« cassé » trouve « cassées », « vol » trouve « vols » et « volé »).
  */
 function keywordPattern(keyword: string): RegExp {
   const escaped = foldText(keyword).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:e|s|es)?(?![\\p{L}\\p{N}])`, "u");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?:e|s|es)?(?![\\p{L}\\p{N}])`, "gu");
+}
+
+const ONE_WORD = "\\p{L}+";
+
+const NEGATOR = `(?:(?:aucune?s?|sans(?!\\s+(?:parler|compter|oublier)(?![\\p{L}]))|zero|0|pas\\s+(?:de|un|une|le\\s+moindre|la\\s+moindre)|rien\\s+de|ni|jamais(?:\\s+(?:de|en))?|point\\s+de|nul(?:le)?)\\s+|(?:pas|rien|jamais)\\s+d'\\s*)`;
+
+/**
+ * Une tournure niée n'est pas un incident (Guillaume, 14/10/2026) :
+ * « rien de cassé », « aucun objet manquant », « sans casse », « jamais en retard ».
+ * Règles lues sur le texte qui PRÉCÈDE immédiatement le mot-clé (texte replié), coupé à
+ * la dernière ponctuation forte ou au dernier « mais / sauf / par contre / cependant / en
+ * revanche » : « pas de casse mais du retard » garde le retard.
+ *
+ * Relecture du 15/10/2026 : la négation ne porte que sur le mot-clé qui la suit
+ * directement (« sans casse »), ou, à un mot de distance, sur un participe ou un adjectif
+ * (« aucun objet manquant », « rien de vraiment cassé ») — jamais sur un nom (« zéro
+ * respect, retard énorme » est un retard). « Sans parler / compter / oublier » ne nie rien.
+ */
+export const VIGILANCE_NEGATION_RULES: ReadonlyArray<{ id: string; pattern: RegExp; participleOnly?: boolean }> = [
+  {
+    // pas de casse, sans casse, rien d'abîmé, ni casse, zéro casse, jamais de retard
+    id: "negateur_juste_avant",
+    pattern: new RegExp(`(?<![\\p{L}])${NEGATOR}$`, "u"),
+  },
+  {
+    // aucun objet cassé, aucun carton manquant : un mot entre les deux, participe seulement
+    id: "negateur_un_mot_avant",
+    pattern: new RegExp(`(?<![\\p{L}])${NEGATOR}${ONE_WORD}\\s+$`, "u"),
+    participleOnly: true,
+  },
+  {
+    // rien n'a été cassé, aucun meuble n'a été abîmé
+    id: "rien_n_a_ete",
+    pattern: new RegExp(
+      `(?<![\\p{L}])(?:rien|aucune?s?|personne)\\s+(?:${ONE_WORD}\\s+){0,2}n'(?:a|ont|est|sont|etait|etaient|avons|avions)\\s+(?:(?:ete|eu|pas|jamais|rien)\\s+){0,2}(?:${ONE_WORD}\\s+)?$`,
+      "u",
+    ),
+  },
+  {
+    // pas cassé, pas été abîmé, jamais en retard
+    id: "pas_juste_avant",
+    pattern: new RegExp(`(?<![\\p{L}])(?:pas|jamais)\\s+(?:ete\\s+|eu\\s+de\\s+|du\\s+tout\\s+)?$`, "u"),
+  },
+];
+
+/**
+ * Expressions positives (14/10/2026) qui contiennent un mot-clé : « dans les délais »,
+ * « délais respectés », « au-delà de mes attentes », « devis respecté », « tarif
+ * raisonnable ». L'occurrence est neutralisée si l'expression la couvre entièrement.
+ */
+export const VIGILANCE_POSITIVE_EXPRESSIONS: ReadonlyArray<{ id: string; pattern: RegExp }> = [
+  {
+    id: "delais_respectes",
+    pattern:
+      /(?:respect(?:e|ant|es)?\s+(?:des|du|les|le|de\s+ses|de\s+leurs)\s+delais?|delais?\s+(?:(?:ont|a|sont|est|etaient|etait|ete|bien|tres|parfaitement|totalement|toujours|ont\s+ete|a\s+ete)\s+){0,3}(?:respecte|tenu|court|rapide|record|annonce|imparti|convenu|prevu|raisonnable|correct)\w*|dans\s+(?:les|le|des|un|de\s+tres\s+|de\s+)\s*(?:\p{L}+\s+)?delais?|en\s+un\s+(?:\p{L}+\s+)?delai|rien\s+a\s+redire\s+sur\s+les\s+delais)/gu,
+  },
+  {
+    id: "attentes_esperances",
+    pattern: /(?:mes|nos|vos|ses|leurs|les|toutes\s+(?:mes|nos|vos|les))\s+attentes/gu,
+  },
+  {
+    id: "prix_respecte",
+    pattern:
+      /(?:respect(?:e|ant)?\s+(?:du|le|des)\s+(?:devis|tarifs?|montant|cout)|conforme\s+(?:au|aux)\s+(?:devis|tarifs?)|(?:devis|tarifs?|montant|cout|couts)\s+(?:(?:prealable|initial|annonce|a|ont|est|sont|etait|ete|bien|tres|parfaitement|totalement|largement|tout\s+a\s+fait|a\s+ete)\s+){0,3}(?:respecte|tenu|raisonnable|correct|competitif|attractif|abordable|honnete|interessant|imbattable|clair|detaille|precis|gratuit|rapide|reactif|transparent|juste|maitrise|conforme|abordables?|tres\s+bien)\w*|devis\s+en\s+\d+\s*h)/gu,
+  },
+];
+
+const NEGATION_LOOKBEHIND_CHARS = 70;
+const POSITIVE_WINDOW_CHARS = 60;
+
+/** Ce qui arrête la portée d'une négation : ponctuation forte, ou une conjonction d'opposition. */
+const NEGATION_BARRIER = /(?:[.!?;:]|(?<![\p{L}])(?:mais|sauf|cependant|par\s+contre|en\s+revanche|toutefois|pourtant)(?![\p{L}]))/gu;
+
+/**
+ * Une expression positive (« délai annoncé ») ne vaut rien si la suite de la phrase la
+ * contredit : « n'a pas été respecté », « non respecté », « dépassé ».
+ */
+const POSITIVE_CONTRADICTED = /(?:pas\s+(?:ete\s+)?(?:respecte|tenu)|non\s+(?:respecte|tenu)|depasse|pas\s+du\s+tout\s+respecte)/u;
+
+/** Participe ou adjectif (« cassé », « abîmées », « manquant », « disparu », « soustrait ») et non un nom. */
+function isParticipleForm(lowerSegment: string): boolean {
+  return /(?:é|ée|és|ées|ant|ants|ante|antes|u|ue|us|ues|ait|aite|aits|aites)$/u.test(lowerSegment);
+}
+
+function cutAtLastBarrier(text: string): string {
+  let last = -1;
+  const barrier = new RegExp(NEGATION_BARRIER.source, "gu");
+  let match: RegExpExecArray | null;
+  while ((match = barrier.exec(text))) last = match.index + match[0].length;
+  return last >= 0 ? text.slice(last) : text;
+}
+
+/**
+ * L'occurrence en `index` (longueur `length`) est-elle niée, ou prise dans une expression
+ * positive ? `lower` : le même texte, en minuscules mais avec ses accents (même longueur),
+ * pour distinguer « cassé » de « casse » ; sans lui, aucune occurrence n'est un participe.
+ */
+export function isNeutralisedOccurrence(folded: string, index: number, length: number, lower?: string): boolean {
+  const before = cutAtLastBarrier(folded.slice(Math.max(0, index - NEGATION_LOOKBEHIND_CHARS), index));
+  const participle = lower != null && isParticipleForm(lower.slice(index, index + length));
+  if (VIGILANCE_NEGATION_RULES.some((rule) => (participle || !rule.participleOnly) && rule.pattern.test(before))) return true;
+  const sentenceAfter = folded.slice(index + length, index + length + POSITIVE_WINDOW_CHARS).split(/[.!?;]/u)[0] ?? "";
+  if (POSITIVE_CONTRADICTED.test(sentenceAfter)) return false;
+  const start = Math.max(0, index - POSITIVE_WINDOW_CHARS);
+  const around = folded.slice(start, index + length + POSITIVE_WINDOW_CHARS);
+  for (const expression of VIGILANCE_POSITIVE_EXPRESSIONS) {
+    const pattern = new RegExp(expression.pattern.source, "gu");
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(around))) {
+      const from = start + match.index;
+      const to = from + match[0].length;
+      if (from <= index && to >= index + length) return true;
+      if (match[0].length === 0) pattern.lastIndex += 1;
+    }
+  }
+  return false;
+}
+
+/** Vrai si le texte (replié) contient au moins une occurrence d'un mot-clé qui n'est ni niée ni positive. */
+function hasRealIncident(folded: string, lower: string, patterns: RegExp[]): boolean {
+  for (const pattern of patterns) {
+    const global = new RegExp(pattern.source, "gu");
+    let match: RegExpExecArray | null;
+    while ((match = global.exec(folded))) {
+      if (!isNeutralisedOccurrence(folded, match.index, match[0].length, lower)) return true;
+    }
+  }
+  return false;
 }
 
 const CATEGORY_PATTERNS = new Map(
@@ -216,16 +367,23 @@ const CATEGORY_PATTERNS = new Map(
  * 4★ ou moins, élogieux compris, et les mots-clés étaient des sous-chaînes
  * (« vol » attrapait « volume »). Mesuré en production : 49 déménageurs étaient
  * pénalisés à tort sous le seuil de 75.
+ *
+ * Depuis le 14/10/2026 : une occurrence niée (« rien de cassé ») ou prise dans
+ * une expression positive (« dans les délais ») ne compte pas
+ * (`isNeutralisedOccurrence`). Relu le 15/10/2026 : une négation s'arrête à
+ * « mais », « sauf », « par contre »… et ne couvre pas un vrai incident ; une
+ * expression positive contredite (« délai annoncé non respecté ») ne neutralise rien.
  */
 export function buildHeuristicVigilance(authentic: GoogleReview[]): VigilanceCategoryResult[] {
   const concerns = authentic.filter((review) => (review.rating ?? 0) <= 4);
   const folded = new Map(concerns.map((review) => [review, foldText(review.text)]));
+  const lowered = new Map(concerns.map((review) => [review, lowerText(review.text)]));
   const matchedByKeyword = new Set<GoogleReview>();
   const keywordMatches = new Map<string, GoogleReview[]>();
   for (const category of VIGILANCE_CATEGORIES) {
     const patterns = CATEGORY_PATTERNS.get(category.id) ?? [];
     if (patterns.length === 0) continue;
-    const matched = concerns.filter((review) => patterns.some((pattern) => pattern.test(folded.get(review) ?? "")));
+    const matched = concerns.filter((review) => hasRealIncident(folded.get(review) ?? "", lowered.get(review) ?? "", patterns));
     matched.forEach((review) => matchedByKeyword.add(review));
     keywordMatches.set(category.id, matched);
   }
@@ -298,6 +456,13 @@ export function categoriesFromLlmAnswer(
 }
 
 /**
+ * Vigilance d'une fiche dont aucun avis n'est retenu (Guillaume, 14/10/2026) :
+ * on ne sait rien des incidents, la vigilance est neutre (50), comme le financier
+ * sans bilan. Avant : 100, une absence d'avis valait un sans-faute.
+ */
+export const VIGILANCE_NO_REVIEWS_SCORE = 50;
+
+/**
  * Vigilance = somme pondérée des six catégories. Heuristique par mots-clés
  * d'abord ; si des modèles sont fournis et que l'un répond une classification
  * lisible, elle remplace l'heuristique. Sans modèle, le résultat est complet
@@ -330,13 +495,19 @@ export async function deriveVigilanceSnapshot(
     fallbackReason = "no_llm_configured";
   }
 
+  const noReviews = authentic.length === 0;
+  const vigilanceScore = noReviews
+    ? VIGILANCE_NO_REVIEWS_SCORE
+    : clamp(categories.reduce((sum, category) => sum + category.score * category.weight, 0));
+
   return {
     source: "vigilance_categories",
-    vigilanceScore: clamp(categories.reduce((sum, category) => sum + category.score * category.weight, 0)),
+    vigilanceScore,
     categories,
     totalAuthenticReviews: authentic.length,
     method,
     fallbackReason,
     llmFallback,
+    noReviews,
   };
 }

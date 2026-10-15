@@ -12,6 +12,14 @@ import type { PappersSnapshot } from "./types.js";
 
 export const PAPPERS_MAX_AGE_DAYS = 120;
 
+/**
+ * Le recalcul trimestriel relit le registre (Guillaume, 15/10/2026) : il ne
+ * reprend une fiche que si elle a été payée dans les 7 derniers jours, c'est-à-dire
+ * par une tentative du même recalcul (relances après panne). Le filet en cas de
+ * panne du registre, et les autres déclencheurs, gardent les 120 jours.
+ */
+export const PAPPERS_QUARTERLY_MAX_AGE_DAYS = 7;
+
 export type PappersCandidate = { snapshots: unknown; computedAt: Date };
 
 export type FreshPappers = {
@@ -43,8 +51,8 @@ export function pappersPaidAt(snapshot: PappersSnapshot, scoreComputedAt: Date):
   return scoreComputedAt;
 }
 
-function cutoffFrom(now: Date): Date {
-  return new Date(now.getTime() - PAPPERS_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+function cutoffFrom(now: Date, maxAgeDays: number = PAPPERS_MAX_AGE_DAYS): Date {
+  return new Date(now.getTime() - maxAgeDays * 24 * 60 * 60 * 1000);
 }
 
 /** Le SIREN de l'entreprise que décrit la fiche Pappers, ou null s'il n'y figure pas. */
@@ -58,13 +66,17 @@ export function pappersSnapshotSiren(snapshot: PappersSnapshot): string | null {
  * `expectedSiren` : le SIREN actuel de la fiche. Une fiche Pappers d'une AUTRE entreprise
  * (SIREN corrigé depuis) n'est jamais réutilisée (15/10/2026 : deux fiches dont le SIREN
  * avait été corrigé étaient notées avec la fiche Pappers de l'ancienne société).
+ *
+ * `maxAgeDays` : âge maximal de la fiche reprise. 120 jours par défaut ;
+ * `PAPPERS_QUARTERLY_MAX_AGE_DAYS` (7) pour le recalcul trimestriel.
  */
 export function pickFreshPappers(
   candidates: PappersCandidate[],
   now: Date = new Date(),
-  expectedSiren?: string | null
+  expectedSiren?: string | null,
+  maxAgeDays: number = PAPPERS_MAX_AGE_DAYS
 ): FreshPappers | null {
-  const cutoff = cutoffFrom(now);
+  const cutoff = cutoffFrom(now, maxAgeDays);
   const expected = (expectedSiren ?? "").replace(/\D+/g, "");
   for (const candidate of candidates) {
     const previous = (candidate.snapshots as { pappers?: unknown } | null)?.pappers;

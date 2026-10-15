@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { buildPappersSnapshot, emptyPappersSnapshot } from "../pappers.js";
 import type { RegistrySnapshot, ScoringProviders } from "../ports.js";
+import type { SitrDirectoryEntry } from "../register-cap.js";
 import type { GoogleReview, GoogleSnapshot, MoverIdentity, PappersErrorKind, ReviewsSnapshot } from "../types.js";
 
 /**
@@ -22,6 +23,8 @@ export interface MoverFixture {
     pappers: { httpStatus: number; raw: Record<string, unknown> } | { error: string; errorKind: PappersErrorKind };
     transportRegister: unknown | null;
     sireneClosed: boolean | null;
+    /** Annuaire du registre des transporteurs (facultatif ; absent = non lu, donc pas de plafond). */
+    transportRegisterDirectory?: SitrDirectoryEntry[] | null;
   };
   google: { placeId: string; name?: string | null; rating: number | null; ratingCount: number | null; businessStatus: string | null } | { error: string };
   reviews: GoogleReview[] | { error: string };
@@ -54,7 +57,12 @@ export function createFixtureProviders(fixtures: MoverFixture[]): ScoringProvide
           "raw" in registry.pappers
             ? buildPappersSnapshot(registry.pappers.raw, { httpStatus: registry.pappers.httpStatus, now: new Date(asOf) })
             : emptyPappersSnapshot({ error: registry.pappers.error, errorKind: registry.pappers.errorKind });
-        return { pappers, transportRegister: registry.transportRegister, sireneClosed: registry.sireneClosed };
+        return {
+          pappers,
+          transportRegister: registry.transportRegister,
+          sireneClosed: registry.sireneClosed,
+          transportRegisterDirectory: registry.transportRegisterDirectory ?? null,
+        };
       },
     },
     places: {

@@ -9,7 +9,9 @@ import {
   deriveReputationSnapshot,
   deriveVigilanceSnapshot,
   detectFakeReviews,
+  isNeutralisedOccurrence,
   reputationVolumeCap,
+  VIGILANCE_NO_REVIEWS_SCORE,
 } from "../src/reputation.js";
 import { review, reviewsOf } from "./helpers.js";
 
@@ -231,5 +233,95 @@ describe("vigilance heuristique (corrigée le 08/10/2026)", () => {
       avis(2, "Des affaires DÉROBÉES dans le camion, je déconseille fortement cette entreprise à tous."),
     ];
     assert.equal(categorie("vol", r).reviewCount, 4);
+  });
+});
+
+describe("vigilance : négations et expressions positives (14/10/2026)", () => {
+  const incidents = (text: string) =>
+    buildHeuristicVigilance([review({ rating: 4, text })])
+      .filter((category) => category.reviewCount > 0)
+      .map((category) => category.id);
+
+  it("une tournure niée n'est pas un incident", () => {
+    for (const text of [
+      "Rien de cassé, équipe au top",
+      "Aucun objet manquant à l'arrivée",
+      "Sans casse et sans stress",
+      "Rien n'a été abîmé malgré l'escalier",
+      "Rien n’a été abîmé, apostrophe typographique comprise",
+      "Jamais en retard, très pro",
+      "Pas de casse, pas de retard",
+    ]) {
+      assert.deepEqual(incidents(text), [], text);
+    }
+  });
+
+  it("une expression positive n'est pas un incident", () => {
+    for (const text of [
+      "Déménagement fait dans les délais",
+      "Délais respectés, merci",
+      "Au-delà de mes attentes",
+      "Devis respecté au centime",
+      "Tarif raisonnable pour la prestation",
+    ]) {
+      assert.deepEqual(incidents(text), [], text);
+    }
+  });
+
+  it("« devis » ou « tarif » seuls ne sont plus des incidents ; un vrai incident compte toujours", () => {
+    assert.deepEqual(incidents("J'ai demandé plusieurs devis, préparation du devis rapide"), []);
+    assert.deepEqual(incidents("Un meuble cassé et deux heures de retard"), ["casse_degradation", "calendrier"]);
+    assert.deepEqual(incidents("Rien de cassé mais un carton volé"), ["vol"]);
+    assert.deepEqual(incidents("Surfacturation de 200 € à l'arrivée"), ["prix_modifie"]);
+  });
+
+  it("la neutralisation porte sur l'occurrence, pas sur tout l'avis", () => {
+    const text = "pas de casse au depart, mais casse a l'arrivee";
+    assert.equal(isNeutralisedOccurrence(text, text.indexOf("casse"), 5), true);
+    assert.equal(isNeutralisedOccurrence(text, text.lastIndexOf("casse"), 5), false);
+    assert.deepEqual(incidents("Pas de casse au départ, mais casse à l'arrivée"), ["casse_degradation"]);
+  });
+});
+
+describe("vigilance : relecture des négations (15/10/2026)", () => {
+  const incidents = (text: string) =>
+    buildHeuristicVigilance([review({ rating: 4, text })])
+      .filter((category) => category.reviewCount > 0)
+      .map((category) => category.id);
+
+  it("une négation n'absout pas un vrai incident", () => {
+    const cases: Array<[string, string[]]> = [
+      ["Pas de casse mais retard de trois heures", ["calendrier"]],
+      ["Sans parler du retard de 4h", ["calendrier"]],
+      ["Aucun professionnalisme meubles cassés", ["casse_degradation"]],
+      ["Zéro respect retard énorme", ["calendrier"]],
+      ["Pas de chance canapé abîmé", ["casse_degradation"]],
+      ["Sans compter le supplément facturé", ["prix_modifie"]],
+      ["pas content, carton cassé", ["casse_degradation"]],
+      ["ne recommande pas, meuble cassé", ["casse_degradation"]],
+      ["Rien de cassé. Par contre un carton manquant", ["vol"]],
+    ];
+    for (const [text, expected] of cases) assert.deepEqual(incidents(text), expected, text);
+  });
+
+  it("une expression positive contredite reste un incident", () => {
+    assert.deepEqual(incidents("Le délai annoncé n'a pas été respecté"), ["calendrier"]);
+    assert.deepEqual(incidents("Délais prévus largement dépassés"), ["calendrier"]);
+    assert.deepEqual(incidents("Délai annoncé respecté, merci"), []);
+  });
+});
+
+describe("vigilance sans avis (14/10/2026)", () => {
+  it("aucun avis retenu = vigilance neutre 50, pas 100", async () => {
+    const empty = await deriveVigilanceSnapshot([]);
+    assert.equal(empty.vigilanceScore, VIGILANCE_NO_REVIEWS_SCORE);
+    assert.equal(empty.vigilanceScore, 50);
+    assert.equal(empty.noReviews, true);
+    // Que des avis écartés (5★ sans texte, deux signaux) : rien de retenu non plus.
+    const onlySuspicious = await deriveVigilanceSnapshot([review({ text: "" }), review({ text: "" })]);
+    assert.equal(onlySuspicious.vigilanceScore, 50);
+    const withReviews = await deriveVigilanceSnapshot(reviewsOf(30));
+    assert.equal(withReviews.vigilanceScore, 100);
+    assert.equal(withReviews.noReviews, false);
   });
 });

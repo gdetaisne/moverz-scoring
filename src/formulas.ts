@@ -154,29 +154,74 @@ function scoreTendance(latest: FinancialExercise, prev: FinancialExercise | null
 }
 
 /**
- * Note financière sur 100 à partir des bilans publiés (exercice le plus complet
- * parmi les 3 derniers) : résultat /25, fonds propres /25, trésorerie /20,
- * endettement /15, tendance /15. `null` si aucun chiffre exploitable : on ne
- * note pas une entreprise sur du vide.
+ * Champs d'un exercice que l'exercice précédent peut compléter quand le registre
+ * ne les donne pas (Guillaume, 14/10/2026). Jamais le résultat : un résultat
+ * absent reste absent, il ne prend pas celui de l'année d'avant.
+ */
+const FINANCIAL_FILLABLE_FIELDS = ["chiffre_affaires", "fonds_propres", "tresorerie", "dettes_financieres"] as const;
+
+/**
+ * Un bilan dont l'exercice le plus récent a clôturé il y a plus de 24 mois (à la
+ * date du calcul) ne dit plus rien de la santé actuelle de l'entreprise : on le
+ * traite comme « pas de chiffres », financier neutre 50. Sans plancher : un vieux
+ * mauvais bilan devient 50 lui aussi (Guillaume a refusé le plancher, 14/10/2026).
+ */
+export const FINANCIAL_STALE_MONTHS = 24;
+
+/** Date de clôture d'un exercice (date explicite, sinon le 31/12 de l'année). */
+export function financialClosureDate(exercise: Record<string, unknown>): Date | null {
+  const raw =
+    typeof exercise.date_de_cloture_exercice === "string"
+      ? exercise.date_de_cloture_exercice
+      : typeof exercise.date_cloture === "string"
+        ? exercise.date_cloture
+        : null;
+  if (raw) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  if (typeof exercise.annee === "number") return new Date(Date.UTC(exercise.annee, 11, 31));
+  return null;
+}
+
+/** Exercices du plus récent au plus ancien ; ceux sans date gardent leur ordre, à la fin. */
+function sortExercisesByClosure(finances: Array<Record<string, unknown>>) {
+  const dated = finances.map((ex, index) => ({ ex, index, d: financialClosureDate(ex) }));
+  return dated
+    .sort((a, b) => {
+      if (a.d && b.d) return b.d.getTime() - a.d.getTime() || a.index - b.index;
+      if (a.d) return -1;
+      if (b.d) return 1;
+      return a.index - b.index;
+    })
+    .map((x) => x.ex);
+}
+
+/**
+ * Note financière sur 100 à partir des bilans publiés : résultat /25, fonds
+ * propres /25, trésorerie /20, endettement /15, tendance /15. `null` si aucun
+ * chiffre exploitable : on ne note pas une entreprise sur du vide.
+ *
+ * Depuis le 14/10/2026 (Guillaume) : toujours l'exercice le plus récent. Avant,
+ * on prenait « le plus rempli des trois derniers », qui pouvait noter une
+ * entreprise sur un bilan vieux de plusieurs années alors qu'un plus récent était
+ * publié. Les champs manquants du plus récent se complètent avec l'exercice
+ * précédent (jamais le résultat) ; la tendance compare les valeurs propres des
+ * deux exercices.
+ *
+ * Ne regarde pas l'âge du bilan : voir `assessLegacyFinancial`.
  */
 export function computeLegacyFinancialScore(finances: Array<Record<string, unknown>>) {
   if (!Array.isArray(finances) || finances.length === 0) return null;
-
-  const countUsable = (ex: Record<string, unknown>) =>
-    [
-      ex.chiffre_affaires,
-      ex.resultat,
-      ex.fonds_propres,
-      ex.tresorerie,
-      ex.dettes_financieres,
-    ].filter((v) => v != null).length;
-  let bestIdx = 0;
-  for (let i = 1; i < Math.min(3, finances.length); i += 1) {
-    if (countUsable(finances[i]) > countUsable(finances[bestIdx])) bestIdx = i;
+  const sorted = sortExercisesByClosure(finances);
+  const own = sorted[0] as unknown as FinancialExercise;
+  const prev = sorted.length > 1 ? (sorted[1] as unknown as FinancialExercise) : null;
+  const latest: FinancialExercise = { ...own };
+  if (prev) {
+    for (const key of FINANCIAL_FILLABLE_FIELDS) {
+      if (latest[key] == null && prev[key] != null) latest[key] = prev[key];
+    }
   }
-
-  const latest = finances[bestIdx] as unknown as FinancialExercise;
-  const prev = bestIdx + 1 < finances.length ? (finances[bestIdx + 1] as unknown as FinancialExercise) : null;
   const hasAnyData = [
     latest.resultat,
     latest.fonds_propres,
@@ -191,8 +236,39 @@ export function computeLegacyFinancialScore(finances: Array<Record<string, unkno
     scoreFondsPropres(latest) +
     scoreTresorerie(latest) +
     scoreEndettement(latest) +
-    scoreTendance(latest, prev);
+    scoreTendance(own, prev);
   return clamp(score);
+}
+
+export type LegacyFinancialAssessment = {
+  /** Null : pas de chiffres exploitables, ou bilan trop ancien. */
+  score: number | null;
+  /** `scored` : note calculée ; `no_data` : aucun chiffre ; `stale` : bilan de plus de 24 mois. */
+  status: "scored" | "no_data" | "stale";
+  /** Clôture de l'exercice le plus récent (AAAA-MM-JJ), si connue. */
+  latestClosure: string | null;
+};
+
+/**
+ * La note financière à la date `now`, bilan trop ancien compris (14/10/2026).
+ * `stale` donne `score: null` : `financialScoreForGlobal` applique alors la
+ * neutralité (50), comme pour une entreprise qui ne publie pas ses comptes.
+ */
+export function assessLegacyFinancial(
+  finances: Array<Record<string, unknown>> | null | undefined,
+  now: Date = new Date(),
+): LegacyFinancialAssessment {
+  const list = Array.isArray(finances) ? finances : [];
+  if (list.length === 0) return { score: null, status: "no_data", latestClosure: null };
+  const latestDate = financialClosureDate(sortExercisesByClosure(list)[0]);
+  const latestClosure = latestDate ? latestDate.toISOString().slice(0, 10) : null;
+  if (latestDate) {
+    const staleBefore = new Date(now.getTime());
+    staleBefore.setUTCMonth(staleBefore.getUTCMonth() - FINANCIAL_STALE_MONTHS);
+    if (latestDate < staleBefore) return { score: null, status: "stale", latestClosure };
+  }
+  const score = computeLegacyFinancialScore(list);
+  return { score, status: score == null ? "no_data" : "scored", latestClosure };
 }
 
 // Sans accents : le texte est replié avant comparaison (« Procédure » = « procedure »).
@@ -252,8 +328,8 @@ export function computeLegacyJuridicalScore(
 }
 
 /**
- * (note / 5) × 100, plus un bonus de volume (max +10), plafonné à 75 sous 20
- * avis : un 5/5 sur 6 avis ne vaut pas un 4,7 sur 300.
+ * (note / 5) × 100, plus un bonus de volume (max +10), plafonné selon le nombre
+ * d'avis (`googleVolumeCap`) : un 5/5 sur 6 avis ne vaut pas un 4,7 sur 300.
  */
 export function computeLegacyGoogleScore(
   googleRating: number | null,
@@ -271,18 +347,32 @@ export function computeLegacyGoogleScore(
     10,
     (reviews / Math.max(1, cfg.googleMinReviewsForFullScore)) * 10
   );
-  let score = Math.min(100, ratingScore + volumeBonus);
-  if (reviews < cfg.googleMinReviewsForFullScore) {
-    score = Math.min(score, cfg.googleLowVolumeMaxScore);
-  }
-  return clamp(score);
+  const score = Math.min(100, ratingScore + volumeBonus);
+  return clamp(Math.min(score, googleVolumeCap(reviews, cfg)));
+}
+
+/**
+ * Plafond de la note Google selon le nombre d'avis, progressif (Guillaume,
+ * 14/10/2026) : 75 jusqu'à 10 avis, puis 75 + 2,5 par avis au-delà de 10, plus
+ * de plafond à partir de 20. Avant : 75 sous 20 avis, puis rien — 19 avis
+ * plafonnaient à 75 et 20 avis à 100, une marche de 25 points pour un avis.
+ */
+export const GOOGLE_CAP_RAMP_START_REVIEWS = 10;
+
+export function googleVolumeCap(reviews: number, cfg: LegacyScoringConfig = LEGACY_DEFAULT_CONFIG): number {
+  const full = cfg.googleMinReviewsForFullScore;
+  if (reviews >= full) return 100;
+  if (reviews <= GOOGLE_CAP_RAMP_START_REVIEWS) return cfg.googleLowVolumeMaxScore;
+  const span = full - GOOGLE_CAP_RAMP_START_REVIEWS;
+  return cfg.googleLowVolumeMaxScore + ((100 - cfg.googleLowVolumeMaxScore) * (reviews - GOOGLE_CAP_RAMP_START_REVIEWS)) / span;
 }
 
 /**
  * Les DEUX seules exceptions à « pas de note inventée » valent 50/100, et
  * seulement quand la source a répondu :
  *  - financier : le registre a trouvé l'entreprise mais elle ne publie pas de
- *    bilan (TPE, comptes confidentiels) ;
+ *    bilan (TPE, comptes confidentiels), ou son dernier bilan a clôturé il y a
+ *    plus de 24 mois (`assessLegacyFinancial`, depuis le 14/10/2026) ;
  *  - Google : la fiche existe mais n'a encore aucune note.
  * 50 est la neutralité : ni bonus, ni sanction pour une absence qui n'est pas
  * une faute. Une source en panne, elle, n'a jamais de valeur de repli.

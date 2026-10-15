@@ -35,8 +35,10 @@ export function pappers(partial: Partial<PappersSnapshot> = {}): PappersSnapshot
     companyFound: true,
     source: "pappers",
     fetchedAt: "2026-09-20T00:00:00.000Z",
+    // Score natif du registre : repris tel quel. Une note heuristique, elle, se
+    // recalcule depuis `finances` à la date du calcul (depuis le 14/10/2026).
     financialScore: 80,
-    financialSource: "pappers_heuristic",
+    financialSource: "pappers_native",
     juridicalScore: 100,
     decisions: [],
     finances: [],

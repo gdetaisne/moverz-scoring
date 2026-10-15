@@ -6,6 +6,7 @@ import {
   pappersPaidAt,
   pickFreshPappers,
   PAPPERS_MAX_AGE_DAYS,
+  PAPPERS_QUARTERLY_MAX_AGE_DAYS,
 } from "../src/pappers-cache.js";
 import type { PappersSnapshot } from "../src/types.js";
 
@@ -113,4 +114,17 @@ test("SIREN corrigé : la fiche Pappers de l'ancienne entreprise n'est jamais re
   assert.ok(pickFreshPappers([old], now), "SIREN attendu inconnu : comportement d'avant");
   const noSiren = { snapshots: { pappers: snap({ raw: {} }) }, computedAt: old.computedAt };
   assert.ok(pickFreshPappers([noSiren], now, "222222222"), "fiche sans SIREN lisible : comportement d'avant");
+});
+
+test("âge maximal en paramètre (15/10/2026) : le recalcul trimestriel ne reprend qu'une fiche de moins de 7 jours", () => {
+  const now = new Date("2026-10-15T00:00:00.000Z");
+  const paid = (fetchedAt: string) => ({
+    snapshots: { pappers: snap({ fetchedAt, raw: { siren: "123456789" } }) },
+    computedAt: new Date(fetchedAt),
+  });
+  const thirtyDays = [paid("2026-09-15T00:00:00.000Z")];
+  assert.ok(pickFreshPappers(thirtyDays, now, "123456789"), "120 jours par défaut");
+  assert.equal(pickFreshPappers(thirtyDays, now, "123456789", PAPPERS_QUARTERLY_MAX_AGE_DAYS), null, "recalcul trimestriel : nouvel appel");
+  assert.ok(pickFreshPappers([paid("2026-10-13T00:00:00.000Z")], now, "123456789", PAPPERS_QUARTERLY_MAX_AGE_DAYS), "relance du même recalcul : reprise");
+  assert.equal(PAPPERS_QUARTERLY_MAX_AGE_DAYS, 7);
 });

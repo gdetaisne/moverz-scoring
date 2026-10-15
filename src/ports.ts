@@ -1,3 +1,4 @@
+import type { SitrDirectoryEntry } from "./register-cap.js";
 import type { GoogleSnapshot, MoverIdentity, PappersSnapshot, ReviewsSnapshot } from "./types.js";
 
 /**
@@ -20,6 +21,14 @@ export interface RegistrySnapshot {
   transportRegister: unknown | null;
   /** Entreprise fermée au répertoire Sirene (état administratif « cessé ») ; null si inconnu. */
   sireneClosed: boolean | null;
+  /**
+   * Annuaire du registre des transporteurs (établissements à licence en cours et
+   * commissionnaires, avec leur gestionnaire ou attestataire) : sert à chercher si
+   * une entreprise absente du registre y figure sous un autre SIREN
+   * (`register-cap.ts`, depuis le 14/10/2026). Absent ou null : l'annuaire n'a pas
+   * pu être lu, la recherche est impossible et la note n'est pas plafonnée (15/10/2026).
+   */
+  transportRegisterDirectory?: readonly SitrDirectoryEntry[] | null;
 }
 
 export interface RegistryProvider {

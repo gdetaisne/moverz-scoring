@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  assessLegacyFinancial,
   buildStrictGlobalScore,
   computeLegacyFinancialScore,
   computeLegacyGoogleScore,
   computeLegacyJuridicalScore,
   financialScoreForGlobal,
   googleScoreForGlobal,
+  googleVolumeCap,
   labelFromScore,
   LEGACY_DEFAULT_CONFIG,
 } from "../src/formulas.js";
@@ -100,10 +102,51 @@ describe("axe financier", () => {
     assert.equal(computeLegacyFinancialScore([{ annee: 2025, chiffre_affaires: null, resultat: null }]), null);
   });
 
-  it("l'exercice le plus complet parmi les trois derniers est retenu", () => {
-    const sparse = { chiffre_affaires: 500_000, resultat: null, fonds_propres: null, tresorerie: null, dettes_financieres: null };
-    const full = { chiffre_affaires: 480_000, resultat: 30_000, fonds_propres: 120_000, tresorerie: 60_000, dettes_financieres: 0 };
-    assert.equal(computeLegacyFinancialScore([sparse, full]), computeLegacyFinancialScore([full]));
+});
+
+describe("axe financier : le bilan le plus récent (14/10/2026)", () => {
+  const exercise = (
+    annee: number,
+    fields: Partial<Record<"chiffre_affaires" | "resultat" | "fonds_propres" | "tresorerie" | "dettes_financieres", number | null>>,
+  ) => ({
+    annee,
+    date_de_cloture_exercice: `${annee}-12-31`,
+    chiffre_affaires: null,
+    resultat: null,
+    fonds_propres: null,
+    tresorerie: null,
+    dettes_financieres: null,
+    ...fields,
+  });
+
+  it("l'exercice le plus récent est noté, même si un exercice plus ancien est plus rempli", () => {
+    // Avant le 14/10/2026, « le plus complet des trois derniers » aurait noté 2022.
+    const recentLoss = exercise(2025, { resultat: -60_000, chiffre_affaires: 300_000 });
+    const oldFull = exercise(2022, { resultat: 40_000, chiffre_affaires: 400_000, fonds_propres: 200_000, tresorerie: 80_000, dettes_financieres: 0 });
+    // Résultat 2025 (perte de 20 % du CA = 2), fonds propres / trésorerie / dettes de 2022 en complément,
+    // tendance : CA en baisse et résultat en baisse = 3.
+    assert.equal(computeLegacyFinancialScore([oldFull, recentLoss]), 2 + 25 + 20 + 15 + 3);
+  });
+
+  it("un champ manquant se complète avec l'exercice précédent, jamais le résultat", () => {
+    const latest = exercise(2025, { chiffre_affaires: 500_000 });
+    const prev = exercise(2024, { resultat: 50_000, chiffre_affaires: 450_000, fonds_propres: 120_000 });
+    // Résultat absent en 2025 : 10 (non repris de 2024) ; fonds propres repris (25) ; trésorerie absente (8) ;
+    // endettement : dettes absentes, fonds propres connus = 15 ; tendance : CA en hausse, résultat inconnu = 12.
+    assert.equal(computeLegacyFinancialScore([latest, prev]), 10 + 25 + 8 + 15 + 12);
+  });
+
+  it("bilan clôturé il y a plus de 24 mois = pas de chiffres, même mauvais (aucun plancher)", () => {
+    const now = new Date("2026-10-15T00:00:00Z");
+    const bad = [exercise(2023, { resultat: -80_000, chiffre_affaires: 200_000, fonds_propres: -50_000 })];
+    const stale = assessLegacyFinancial(bad, now);
+    assert.deepEqual(stale, { score: null, status: "stale", latestClosure: "2023-12-31" });
+    // … et c'est l'exception à 50 qui s'applique, comme sans bilan publié.
+    assert.equal(financialScoreForGlobal({ registryAvailable: true, computed: stale.score }).score, 50);
+    // 31/12/2024 : 21 mois et demi avant le 15/10/2026, encore lu.
+    const good = [exercise(2024, { resultat: 30_000, chiffre_affaires: 300_000 })];
+    assert.equal(assessLegacyFinancial(good, now).status, "scored");
+    assert.equal(assessLegacyFinancial([], now).status, "no_data");
   });
 });
 
@@ -135,9 +178,21 @@ describe("axe Google", () => {
     assert.equal(computeLegacyGoogleScore(4.0, 40, "OPERATIONAL"), 90);
   });
 
-  it("moins de 20 avis : plafond 75, même avec 5/5", () => {
+  it("jusqu'à 10 avis : plafond 75, même avec 5/5", () => {
     assert.equal(computeLegacyGoogleScore(5, 6, "OPERATIONAL"), 75);
     assert.equal(computeLegacyGoogleScore(5, 20, "OPERATIONAL"), 100);
+  });
+
+  it("plafond progressif (14/10/2026) : 75 jusqu'à 10 avis, +2,5 par avis jusqu'à 20, plus de plafond ensuite", () => {
+    assert.equal(googleVolumeCap(3), 75);
+    assert.equal(googleVolumeCap(10), 75);
+    assert.equal(googleVolumeCap(14), 85);
+    assert.equal(googleVolumeCap(19), 97.5);
+    assert.equal(googleVolumeCap(20), 100);
+    assert.equal(computeLegacyGoogleScore(5, 10, null), 75);
+    assert.equal(computeLegacyGoogleScore(5, 15, null), 88); // 87,5 arrondi
+    assert.equal(computeLegacyGoogleScore(4.6, 19, null), 98); // 92 + 9,5 = 101,5 → 100, plafonné à 97,5, arrondi 98
+    assert.equal(computeLegacyGoogleScore(4.6, 25, null), 100);
   });
 
   it("une fiche fermée n'est pas pénalisée : ce sont les avis qui comptent", () => {

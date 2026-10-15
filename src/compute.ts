@@ -1,11 +1,14 @@
 import { extractCompanyHealth, type CompanyHealth } from "./company-health.js";
 import { shouldSupersedeOverride } from "./financial-override.js";
 import {
+  assessLegacyFinancial,
   buildStrictGlobalScore,
   computeLegacyGoogleScore,
   financialScoreForGlobal,
   googleScoreForGlobal,
+  labelFromScore,
   LEGACY_DEFAULT_CONFIG,
+  type LegacyFinancialAssessment,
 } from "./formulas.js";
 import type { LlmClient } from "./llm/client.js";
 import { assessGoogleTrade, type GoogleTradeVerdict } from "./google-trade.js";
@@ -19,9 +22,18 @@ import {
   searchApiFailure,
 } from "./outage-policy.js";
 import type { RegistrySnapshot, ScoringProviders } from "./ports.js";
+import {
+  applyRegisterCap,
+  findSitrSuccessorCandidates,
+  identityFromRegistry,
+  knownPersonsFromRegistry,
+  REGISTER_ABSENT_MAX_SCORE,
+  type SitrSuccessorCandidate,
+} from "./register-cap.js";
 import { deriveReputationSnapshot, deriveVigilanceSnapshot } from "./reputation.js";
 import { selectReviewsWindow } from "./review-window.js";
 import { applyClosedToJuridicalScore, applySitrToJuridicalScore, sitrJuridicalVerdict, type SitrJuridicalVerdict } from "./sitr-juridical.js";
+import { sirenFromMover, transportRegisterSnapshotSchema } from "./transport-register.js";
 import type {
   GoogleSnapshot,
   MoverIdentity,
@@ -53,9 +65,15 @@ import type {
  * Depuis le 14/10/2026, chaque échec dit sa nature (`outage-policy.ts`) : panne
  * technique ou verdict de fond. Une collecte d'avis amputée est une panne : elle
  * ne note pas.
+ *
+ * Depuis le 14/10/2026 (version `legacy-compatible-v2`) : le bilan est lu à la
+ * date du calcul (exercice le plus récent ; plus de 24 mois = pas de chiffres),
+ * et une absence confirmée au registre des transporteurs plafonne la note à 65,
+ * sauf si l'entreprise y figure sous un autre SIREN, ou si l'annuaire du registre
+ * n'a pas pu être lu (`register-cap.ts`).
  */
 
-export const ALGORITHM_VERSION = "legacy-compatible-v1";
+export const ALGORITHM_VERSION = "legacy-compatible-v2";
 
 export interface FinancialOverrideInput {
   computedScore: number;
@@ -71,6 +89,12 @@ export interface ScoringInput {
   /** Modèles de langage pour la vigilance ; absents = heuristique seule, résultat déterministe. */
   llm?: readonly LlmClient[];
   now?: Date;
+  /**
+   * Identité de la fiche (nom, lieu, SIREN) : sert à chercher, en cas d'absence au
+   * registre des transporteurs, si l'entreprise y figure sous un autre SIREN. Absente :
+   * la recherche se fait avec les seuls noms et lieux du registre des entreprises.
+   */
+  mover?: Pick<MoverIdentity, "companyName" | "siren" | "siret" | "city" | "postalCode"> | null;
 }
 
 export interface ScoringResult {
@@ -94,6 +118,19 @@ export interface ScoringResult {
     financialOverrideSupersededByRegistry: boolean;
     sitrJuridicalVerdict: SitrJuridicalVerdict;
     sireneClosed: boolean;
+    /**
+     * Plafond à 65 d'une absence confirmée au registre des transporteurs (14/10/2026).
+     * `uncappedScore` : la note avant plafond (null sans plafond) ; `successors` : les
+     * autres SIREN trouvés au registre (null : recherche sans objet ou impossible).
+     */
+    registerCap: {
+      capped: boolean;
+      maxScore: number;
+      uncappedScore: number | null;
+      successors: SitrSuccessorCandidate[] | null;
+    };
+    /** Lecture du bilan à la date du calcul (null : score natif du registre, ou registre absent). */
+    financialAssessment: Pick<LegacyFinancialAssessment, "status" | "latestClosure"> | null;
     /** La fiche Google décrit-elle un déménageur ? `offTrade` = non : note non fiable. Null sans avis collectés. */
     googleTrade: GoogleTradeVerdict | null;
     /** Méthode réellement utilisée par la vigilance, et raison d'un repli sur les mots-clés. */
@@ -133,6 +170,29 @@ export function latestClosureDate(finances: Array<Record<string, unknown>> | nul
     if (parsed && (!best || parsed > best)) best = parsed;
   }
   return best;
+}
+
+/** Annuaire du registre illisible pendant la recherche d'un autre SIREN : pas de plafond, calcul à refaire. */
+export const SITR_DIRECTORY_UNREAD_WARNING = "sitr_successor_lookup_failed:no_cap";
+
+/**
+ * L'entreprise absente du registre des transporteurs y figure-t-elle sous un autre
+ * SIREN ? Null si l'annuaire du registre n'a pas été fourni (lecture impossible).
+ */
+export function lookupSitrSuccessors(input: Pick<ScoringInput, "registry" | "mover">): SitrSuccessorCandidate[] | null {
+  const directory = input.registry.transportRegisterDirectory;
+  if (directory == null) return null;
+  const raw = input.registry.pappers.raw;
+  const fromRegistry = identityFromRegistry(raw);
+  const register = transportRegisterSnapshotSchema.safeParse(input.registry.transportRegister).data;
+  const mover = input.mover ?? null;
+  return findSitrSuccessorCandidates({
+    directory,
+    ownSiren: (mover ? sirenFromMover(mover) : null) ?? register?.siren ?? null,
+    names: [mover?.companyName, ...fromRegistry.names],
+    places: [{ postalCode: mover?.postalCode, commune: mover?.city }, ...fromRegistry.places],
+    managers: knownPersonsFromRegistry(raw),
+  });
 }
 
 export async function computeScore(input: ScoringInput): Promise<ScoringResult> {
@@ -183,12 +243,23 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
     overrideSuperseded = true;
     warnings.push("financial_override_superseded:registry_more_recent");
   }
+  // Depuis le 14/10/2026 : la note heuristique se recalcule à la date du calcul, pas
+  // à celle de l'appel au registre (fiche en cache) : exercice le plus récent, et un
+  // bilan clôturé il y a plus de 24 mois compte comme « pas de chiffres » (50).
+  const financialAssessment =
+    pappers.available && pappers.financialSource !== "pappers_native" ? assessLegacyFinancial(pappers.finances, now) : null;
   const financial = financialScoreForGlobal({
     registryAvailable: pappers.available,
-    computed: pappers.financialScore,
+    computed: pappers.financialSource === "pappers_native" ? pappers.financialScore : (financialAssessment?.score ?? null),
     overrideScore: override?.computedScore ?? null,
   });
-  if (financial.fallbackApplied) warnings.push("financial_fallback_applied:no_published_accounts");
+  if (financial.fallbackApplied) {
+    warnings.push(
+      financialAssessment?.status === "stale"
+        ? `financial_fallback_applied:stale_accounts:${financialAssessment.latestClosure ?? "?"}`
+        : "financial_fallback_applied:no_published_accounts",
+    );
+  }
 
   // Fiche hors métier — jugée sur tous les avis collectés (24 mois), pas sur la fenêtre.
   const googleTrade = reviewsUsable ? assessGoogleTrade(reviews.reviews, google.name ?? null) : null;
@@ -211,6 +282,22 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
     vigilance: reviewsUsable ? vigilance.vigilanceScore : null,
     config: LEGACY_DEFAULT_CONFIG,
   });
+
+  // Absence confirmée au registre des transporteurs (Guillaume, 14/10/2026) : note
+  // globale plafonnée à 65, sauf si l'entreprise y figure sous un autre SIREN
+  // (signalée à l'équipe pour revue). Un registre illisible ne pénalise pas, ni un
+  // annuaire illisible (15/10/2026 : en production, le calcul est refait 24 h plus tard).
+  const capVerdict: SitrJuridicalVerdict = transportRegister == null ? "unknown" : sitrVerdict;
+  const sitrSuccessors = capVerdict === "zero" ? lookupSitrSuccessors(input) : null;
+  if (capVerdict === "zero" && sitrSuccessors == null) warnings.push(SITR_DIRECTORY_UNREAD_WARNING);
+  for (const candidate of sitrSuccessors ?? []) warnings.push(`sitr_successor_candidate:${candidate.siren}`);
+  const uncappedScore = strict.globalScore;
+  const registerCap = applyRegisterCap({ globalScore: strict.globalScore, verdict: capVerdict, successors: sitrSuccessors });
+  if (registerCap.capped) {
+    warnings.push(`sitr_register_cap:${REGISTER_ABSENT_MAX_SCORE}`);
+    strict.globalScore = registerCap.score;
+    strict.globalLabel = labelFromScore(registerCap.score);
+  }
 
   const isReliable = strict.globalScore !== null;
   const registryHealth = pappers.available ? extractCompanyHealth(pappers.raw) : null;
@@ -277,6 +364,15 @@ export async function computeScore(input: ScoringInput): Promise<ScoringResult> 
       financialOverrideSupersededByRegistry: overrideSuperseded,
       sitrJuridicalVerdict: sitrVerdict,
       sireneClosed,
+      registerCap: {
+        capped: registerCap.capped,
+        maxScore: REGISTER_ABSENT_MAX_SCORE,
+        uncappedScore: registerCap.capped ? uncappedScore : null,
+        successors: sitrSuccessors,
+      },
+      financialAssessment: financialAssessment
+        ? { status: financialAssessment.status, latestClosure: financialAssessment.latestClosure }
+        : null,
       googleTrade,
       vigilance: {
         method: vigilance.method ?? null,
@@ -335,5 +431,6 @@ export async function scoreMover(
     financialOverride: options.financialOverride,
     llm: options.llm,
     now: options.now,
+    mover,
   });
 }

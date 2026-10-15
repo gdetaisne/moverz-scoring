@@ -56,9 +56,10 @@ Ce que le score en fait (`src/sitr-juridical.ts`) :
 
 - **absent du registre, licence périmée, ou inscrit seulement comme commissionnaire** → juridique à **0**. Un commissionnaire organise le transport mais le confie à un autre : ce n'est pas l'entreprise qui portera vos meubles, et ce n'est pas la même responsabilité ;
 - **pas de SIREN** → on ne tranche pas (`unknown`) : on ne condamne pas sur une donnée manquante ;
-- pour le **label Excellent**, l'absence du registre est éliminatoire, quel que soit le score.
+- pour le **label Excellent**, l'absence du registre est éliminatoire, quel que soit le score ;
+- depuis le 14/10/2026, une absence **confirmée** plafonne aussi la **note globale à 65** (`src/register-cap.ts`, § 12) : le déménageur reste noté, mais sous le seuil de 75.
 
-Le registre n'est en revanche pas un filtre d'entrée dans la liste proposée au client : il agit déjà sur la note, et son numéro figure sur le devis quand on le connaît.
+Le registre n'est pas, en tant que tel, une condition d'entrée dans la liste proposée au client : il agit sur la note, et son numéro figure sur le devis quand on le connaît. Le plafond a deux exceptions : un registre (ou son annuaire) illisible au moment du calcul (aucune pénalité, le calcul est refait), et une entreprise qui figure au registre sous un autre SIREN comme transporteur de marchandises (l'équipe vérifie la fiche). C'est pourquoi on ne dit pas au client que tous les déménageurs présentés sont inscrits.
 
 ## 5. Les procédures collectives
 
@@ -76,6 +77,10 @@ Un avis qui ne dit rien n'apporte rien. Un avis est écarté s'il cumule **deux*
 
 On n'appelle pas ça « faux avis » devant un client ou un déménageur : on ne constate pas de fraude, on constate qu'une part des avis n'apporte pas d'information.
 
+**Une tournure niée n'est pas un incident (14/10/2026).** Le mode par mots-clés lit « Rien de cassé, équipe au top » comme « cassé ». Désormais, une occurrence précédée d'une négation (« rien de », « aucun », « sans », « pas de », « jamais », « rien n'a été ») ou prise dans une expression positive (« dans les délais », « délais respectés », « au-delà de mes attentes », « devis respecté », « tarif raisonnable ») ne compte pas. La neutralisation porte sur l'occurrence, pas sur l'avis : « pas de casse au départ, mais casse à l'arrivée » reste un incident. Relu le 15/10/2026, pour qu'une négation n'efface jamais un vrai incident : elle ne porte que sur le mot-clé qui la suit, ou, à un mot de distance, sur un participe (« aucun objet manquant ») et jamais sur un nom (« zéro respect, retard énorme » est un retard) ; elle s'arrête à « mais », « sauf », « par contre », « cependant », « en revanche » et à la ponctuation forte (« Rien de cassé. Par contre un carton manquant » compte le carton) ; « sans parler du retard », « sans compter le supplément » ne nient rien ; et une expression positive contredite (« le délai annoncé n'a pas été respecté », « délais dépassés ») ne neutralise rien. « Devis » et « tarif » seuls ne sont plus des mots-clés : « j'ai demandé plusieurs devis » décrit un parcours normal.
+
+**Aucun avis retenu : vigilance neutre (14/10/2026).** Quand la collecte a réussi mais qu'aucun avis n'est retenu (aucun avis, ou seulement des avis écartés), la vigilance vaut 50, comme la réputation dans le même cas : on ne sait rien des incidents, ce n'est ni un sans-faute ni une faute. Avant, elle valait 100.
+
 **La fenêtre de lecture est adaptative.** 12 mois par défaut, parce qu'un score doit refléter l'équipe d'aujourd'hui. Mais un artisan qui reçoit 8 avis par an serait noté sur un échantillon où un seul avis négatif fait basculer la note : sous **12 avis récents**, on lit **24 mois**. Les plafonds de volume (60 sous 5 avis authentiques, 75 sous 10, 88 sous 25) disent la même chose autrement : 100 % de satisfaits sur 4 avis n'est pas une preuve.
 
 ## 7. « Pas de note inventée »
@@ -84,8 +89,10 @@ Le score est une promesse faite au client. S'il manque une source critique (regi
 
 Deux exceptions, et seulement deux, toutes deux à 50 (la neutralité), et seulement quand la source a répondu :
 
-- **pas de bilan publié** : une TPE a le droit de ne pas publier ses comptes ; ce n'est pas une faute, ce n'est pas non plus une preuve de solidité. Le déménageur peut téléverser son bilan : un modèle de langage en extrait les chiffres, des contrôles stricts les valident (bonne entreprise, vrai bilan, confiance suffisante, moins de 12 mois), et c'est **la même formule** qui note. Le registre reprend la main dès qu'il publie plus récent ;
+- **pas de bilan publié**, ou un dernier bilan clôturé il y a plus de 24 mois (depuis le 14/10/2026) : une TPE a le droit de ne pas publier ses comptes ; ce n'est pas une faute, ce n'est pas non plus une preuve de solidité. Le déménageur peut téléverser son bilan : un modèle de langage en extrait les chiffres, des contrôles stricts les valident (bonne entreprise, vrai bilan, confiance suffisante, moins de 12 mois), et c'est **la même formule** qui note. Le registre reprend la main dès qu'il publie plus récent ;
 - **fiche Google sans aucune note** : une fiche toute neuve n'est ni bonne ni mauvaise.
+
+Ce ne sont pas des sources manquantes : quand la collecte d'avis a réussi mais qu'aucun avis n'est retenu, la réputation et la vigilance valent aussi 50, pour la même raison (§ 6).
 
 Une fiche Google **introuvable**, elle, bloque la note : on ne note jamais un déménageur avec les avis d'un autre. D'où un rapprochement nom/localisation volontairement étroit (`src/google-matching.ts`), et un mode « sans Google » quand la fiche n'est pas prouvée comme la sienne.
 
@@ -104,6 +111,21 @@ Limite connue : sous 5 avis à texte, on ne tranche pas ; une fiche d'un autre m
 
 **Un seul Score, une seule méthode (14/10/2026).** Sur moverz.fr, l'outil « Vérifier un déménageur » montre le Score Moverz de n'importe quelle entreprise, inscrite chez Moverz ou non, mais il ne calcule rien lui-même : c'est le Score officiel, celui de la notation habituelle, avec les mêmes cinq critères, les mêmes poids, les mêmes formules, les mêmes sources (jusqu'à 50 pages d'avis, fiches héritées comprises) et la même règle stricte : un critère manquant, pas de Score, et la raison est écrite. Une entreprise inconnue reçoit une fiche et est notée par cette notation ; une note de plus de 30 jours est recalculée en arrière-plan. Détail dans `docs/architecture.md` § « Un seul Score : l'outil "Vérifier un déménageur" ».
 
+**En cas de doute, des données fraîches (15/10/2026).** Décision de Guillaume : nos données servent à faire des économies ; s'il y a un doute sur l'entreprise, on va chercher des données fraîches pour répondre juste, et il n'existe qu'une note par déménageur. Pourquoi : une fiche de notre base peut porter le SIREN d'une entreprise précédente (une entreprise individuelle fermée, remplacée par une société avec la même fiche Google), et l'outil ne doit ni la noter sur de mauvais chiffres, ni créer une seconde fiche pour la même entreprise. L'outil doute dans deux cas :
+
+- la fiche Google retenue est portée chez nous par une fiche d'un **autre SIREN** que l'entreprise choisie par le visiteur ;
+- la fiche trouvée pour l'entreprise porte un **SIREN fermé**, alors que l'entreprise choisie est active.
+
+Alors :
+
+- l'outil **relit toutes les sources à neuf** (aucune reprise de nos caches ni de notre note), puis la notation habituelle ;
+- une fiche **non inscrite** chez Moverz est **remise sur l'entreprise choisie**, puis renotée, seulement si le nom recoupe **et** que la fiche Google est la même ; les anciens numéros sont gardés, et la correction est journalisée ;
+- une fiche **partenaire** (en ligne, espace ouvert, dossier actif ou Label actif) n'est **jamais corrigée automatiquement** : son contrat, ses conditions, ses paiements et son attestation tiennent à son SIREN. La correction est proposée à l'équipe, et le Score s'affiche « en cours de vérification » ;
+- un SIRET déjà porté par une autre fiche de notre base est **signalé** à l'équipe, sans rien écrire ;
+- l'outil ne crée **jamais de seconde fiche** et ne montre **jamais une note douteuse**.
+
+Exemple fictif : la fiche « Transports Exemple » porte le SIREN 800000001, fermé ; le visiteur choisit la société active 900000001, même nom, même fiche Google. La fiche, non inscrite, passe sur 900000001 (800000001 reste dans son historique) et elle est renotée avec des données du jour. Si elle était partenaire, rien ne serait écrit : l'équipe recevrait la correction à valider, et le visiteur lirait « en cours de vérification ».
+
 ## 8. Ce qu'on a changé en mesurant
 
 Les règles ont bougé quand les mesures sur des fiches réelles l'ont demandé. Chaque changement est daté et commenté dans le code.
@@ -115,7 +137,8 @@ Les règles ont bougé quand les mesures sur des fiches réelles l'ont demandé.
 - **Accents dans le rapprochement Google (avril 2026).** « Déménagements Élysée » ne retrouvait pas « DEMENAGEMENTS ELYSEE » : des déménageurs restaient sans note. Normalisation Unicode ajoutée.
 - **Seuil de la liste (02/10/2026).** Les Dynamiques passent de « 70 et plus » à « plus de 75 », pour que le code dise exactement la promesse écrite au client : « seuls les déménageurs notés plus de 75/100 vous sont présentés ».
 - **Fiche Google hors métier (08/10/2026).** Une fiche rattachée dont les avis ne parlent pas de déménagement ne note plus le déménageur (§ 7).
-- **Coût du registre.** Ne demander que le champ utile a divisé par trois à quatre le coût d'un appel ; une fiche de moins de 120 jours n'est plus rachetée.
+- **Coût du registre.** Ne demander que le champ utile a divisé par trois à quatre le coût d'un appel ; une fiche de moins de 120 jours n'est plus rachetée (sauf au recalcul trimestriel, qui la relit depuis le 15/10/2026, § 12).
+- **Règles des 14 et 15 octobre 2026.** Bilan le plus récent, négations, vigilance sans avis, plafond Google progressif, plafond hors registre, fraîcheur de 90 jours, méthode enregistrée : § 12.
 
 ## 9. Trois défauts trouvés, et corrigés
 
@@ -146,3 +169,40 @@ Le client compare jusqu'à 10 devis, prix fermes, et **choisit lui-même** son d
 Mécanique interne du code, qui n'est pas une promesse faite au client : les places de la liste sont réparties en deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84) ; une place qu'une catégorie ne remplit pas revient à l'autre (`src/mover-list.ts`). Quand un département compte plus de déménageurs éligibles que de places, les déménageurs sous contrat avec Moverz passent d'abord, puis la note départage ; l'ordre affiché au client, lui, reste celui du prix ou des avis Google.
 
 Le label Excellent demande en plus : être au registre des transporteurs, et être joignable.
+
+## 12. Les règles des 14 et 15 octobre 2026
+
+Décisions de Guillaume Stehelin de Taisne, après un audit du score. Les règles du 14/10 forment la version `legacy-compatible-v2` ; une note calculée avant porte `legacy-compatible-v1`. Les exemples sont fictifs.
+
+**1. Le bilan le plus récent (14/10/2026, `assessLegacyFinancial`).** Pourquoi : on retenait « l'exercice le plus rempli des trois derniers », qui pouvait noter une entreprise sur un bilan vieux de plusieurs années alors qu'un plus récent était publié ; et une fiche du registre gardée en cache gardait sa note du jour de l'appel. Désormais :
+
+- on note toujours l'exercice le plus récent ; un champ qu'il ne donne pas se complète avec l'exercice précédent, **jamais le résultat** (un résultat absent reste absent) ;
+- la note se recalcule à la date du calcul, pas à celle de l'appel au registre ;
+- un dernier bilan clôturé il y a **plus de 24 mois** compte comme « pas de chiffres » : financier 50, l'exception neutre (§ 7). **Sans plancher** : un vieux mauvais bilan devient 50 lui aussi. Guillaume a refusé le plancher : un bilan trop ancien ne dit rien, ni en bien ni en mal.
+
+Exemple : bilans 2022 (bénéficiaire, complet) et 2025 (perte de 20 % du chiffre d'affaires, seuls le résultat et le chiffre d'affaires publiés). Avant, 2022 servait. Désormais 2025 : résultat 2, fonds propres, trésorerie et endettement repris de 2022 (25, 20, 15), tendance en baisse 3, soit **65/100**. Calcul au 15/10/2026 avec un dernier bilan clos le 31/12/2023 : **50**, qu'il soit excellent ou mauvais.
+
+**2. Les négations ne sont plus des incidents (14/10/2026, relu le 15/10/2026, `isNeutralisedOccurrence`).** Pourquoi : le mode par mots-clés, qui produit l'essentiel des notes, comptait « rien de cassé » comme une casse. La relecture du 15/10 empêche l'excès inverse : une négation ne couvre plus un vrai incident (« pas de casse mais trois heures de retard » reste un retard). Détail au § 6. Exemple : sur 30 avis retenus, un avis 4★ « Rien de cassé, équipe au top » faisait passer la casse à 3,3 % des avis, donc à 0 : vigilance 70 au lieu de 100, soit **10,5 points** de note globale perdus pour un compliment.
+
+**3. Aucun avis retenu : vigilance 50 (14/10/2026).** Pourquoi : une absence d'avis valait un sans-faute (100). Exemple : une fiche dont les seuls avis sont des 5★ sans texte (écartés) avait 100 en vigilance ; elle a 50, soit 17,5 points de moins sur la note globale.
+
+**4. Plafond Google progressif (14/10/2026, `googleVolumeCap`).** Pourquoi : le plafond de 75 tombait d'un coup à 20 avis ; un avis de plus valait jusqu'à 25 points de composante Google. Désormais : 75 jusqu'à 10 avis, puis 75 + 2,5 par avis au-delà de 10, plus de plafond à partir de 20. Exemple : 4,9/5 sur 17 avis, plafonné à 75 avant, vaut **93** (plafond 92,5) ; c'est le cas de démonstration « Transports Modèle », passé de 83 à 86.
+
+**5. Absence au registre des transporteurs : 65 au plus (14/10/2026, `src/register-cap.ts`).** Pourquoi : un déménageur absent du registre exerce sans l'inscription que la loi exige pour transporter les biens d'un client ; Guillaume ne veut plus qu'il soit présenté sur la seule foi de ses avis. Le juridique à 0 (§ 4) ne coûtait que 12,5 points : une note de 88 restait au-dessus du seuil de 75. Désormais :
+
+- une absence **confirmée** (absent, licence périmée, ou seulement commissionnaire) plafonne la note globale à **65** : le déménageur reste noté, mais sous le seuil de 75 ;
+- avant de plafonner, on cherche si l'entreprise exerce sous un **autre SIREN** (société reprise, entreprise individuelle fermée puis remplacée par une société). Correspondance retenue : même raison sociale et même code postal ou même commune ; ou gestionnaire de transport (ou attestataire de capacité) du registre égal à un dirigeant connu de l'entreprise, nom et prénom, dans le même département. Un nom générique (« Déménagement ») ne prouve rien. Une correspondance lève le plafond, et l'équipe est alertée pour vérifier la fiche ;
+- relu le 15/10/2026 pour éviter les faux « autre SIREN » : seul un **transporteur de marchandises** inscrit lève le plafond, jamais un commissionnaire seul ; un nom de commune ne compte pas comme nom d'entreprise (« Paris Déménagement ») ; une même commune doit être dans le même département (Saint-Denis en Seine-Saint-Denis n'est pas Saint-Denis de La Réunion) ; un gérant homonyme ne suffit pas sans un mot du nom en commun ou la même commune ;
+- un **registre illisible** au moment du calcul ne pénalise pas : pas de plafond sur la foi d'un ancien relevé. Depuis le 15/10/2026 (Guillaume, même logique que pour les pannes de source), un **annuaire illisible** pendant la recherche d'un autre SIREN ne plafonne pas non plus : l'avertissement le dit, et en production le calcul est refait 24 h plus tard, trois fois au plus.
+
+Exemple : note de 88 (financier 100, juridique 0, Google, réputation et vigilance 100), absente du registre : **65**. Si « Déménagements Exemple », même code postal, figure au registre sous un autre SIREN comme transporteur de marchandises : 88, et une alerte. Si l'annuaire n'a pas pu être lu : 88, et un nouveau calcul le lendemain. Une note plafonnée reste dans le cycle de recalcul (point 6) : un déménageur qui s'inscrit au registre retrouve sa note. Le détail de la note garde la note avant plafond (`details.registerCap`).
+
+**6. Fraîcheur de 90 jours (15/10/2026).** Pourquoi : une note montrée au client doit dire l'état récent de l'entreprise, pas celui d'il y a six mois. Désormais :
+
+- le planificateur recalcule tout déménageur montré au client : partenaires en ligne, Labels actifs, et **toute note fiable de plus de 75** (avant : 85 et plus), ainsi que toute note **plafonnée par le registre** (un déménageur qui s'inscrit retrouve sa note), quand sa note a plus de 90 jours. Les plus anciennes d'abord, 250 au plus par passage quotidien : environ 850 notes sur 90 jours, soit un rattrapage en 4 jours, puis une dizaine par jour. Un seul passage par 24 h, même quand l'application redémarre plusieurs fois par jour (pas de passage au démarrage si le dernier date de moins de 20 h). Les fiches créées par l'outil « Vérifier un déménageur » restent hors du planificateur ; la pause après relances épuisées ne change pas ;
+- ce recalcul **relit le registre des entreprises** : il ne reprend une fiche Pappers que si elle a moins de **7 jours** (`PAPPERS_QUARTERLY_MAX_AGE_DAYS`), c'est-à-dire payée par une tentative du même recalcul. Le filet en cas de panne, et les autres déclencheurs, gardent 120 jours ;
+- l'analyse d'un devis reprend la note en base d'un déménageur déjà noté jusqu'à **90 jours** (180 avant), le cycle de recalcul.
+
+L'outil « Vérifier un déménageur » garde son propre délai : une note de plus de 30 jours y est recalculée en arrière-plan.
+
+**7. La méthode suivie, enregistrée avec chaque note (15/10/2026).** Pourquoi : pour relire une note des mois plus tard, il faut savoir comment chaque critère a été obtenu, pas seulement son chiffre. Chaque note enregistre, critère par critère, la méthode réellement suivie : financier (score natif du registre, formule sur les bilans, sans chiffres, bilan de plus de 24 mois, bilan déposé par le déménageur), juridique, registre des transporteurs (inscrit, plafond, autre SIREN, registre ou annuaire illisible), Google, réputation, vigilance (modèle OpenAI ou Anthropic, ou mots-clés avec la raison du repli) et lecture des avis (complète ou non). C'est lu par l'équipe dans le back-office, jamais montré au client. Ce dépôt n'en publie pas le texte (ce sont des phrases d'écran, sans effet sur la note) ; il expose les éléments qui le fondent dans `details` : `financialAssessment`, `registerCap`, `vigilance`, `sitrJuridicalVerdict`, `googleTrade`, et les avertissements de `reliabilityDetails.warnings`.

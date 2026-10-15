@@ -132,6 +132,8 @@ export interface VigilanceSnapshot {
   fallbackReason?: string | null;
   /** Vrai quand un modèle fourni a échoué et que les mots-clés l'ont remplacé. */
   llmFallback?: boolean;
+  /** Aucun avis retenu : vigilance neutre 50 (depuis le 14/10/2026 ; 100 avant). */
+  noReviews?: boolean;
   windowMonths?: 12 | 24;
   reviewsCount12m?: number;
   reviewsCount24m?: number;

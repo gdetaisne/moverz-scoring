@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createFixtureProviders, loadFixtures } from "../src/adapters/fixture-providers.js";
-import { computeScore, GOOGLE_NOT_PROVEN_ERROR, scoreMover, type ScoringInput } from "../src/compute.js";
+import { computeScore, GOOGLE_NOT_PROVEN_ERROR, scoreMover, SITR_DIRECTORY_UNREAD_WARNING, type ScoringInput } from "../src/compute.js";
 import type { RegistrySnapshot } from "../src/ports.js";
 import { google, NOW, pappers, reviewsOf, reviewsSnapshot, sitr } from "./helpers.js";
 
@@ -160,6 +160,85 @@ describe("orchestration stricte", () => {
   });
 });
 
+describe("règles du 14/10/2026 dans l'orchestration", () => {
+  const offRegister = () => sitr({ inMarchandises: false, marchandises: null, matched: false, matchKind: "none" });
+  // Note avant plafond : 100×0,125 + 0×0,125 + 100×0,2 + 100×0,2 + 100×0,35 = 87,5 → 88.
+  const strong = (registryPartial: Partial<RegistrySnapshot>) =>
+    input({ registry: registry({ pappers: pappers({ financialScore: 100 }), ...registryPartial }) });
+  const directoryEntry = {
+    siren: "900000002",
+    raisonSociale: "DEMENAGEMENTS EXEMPLE",
+    postalCode: "69007",
+    commune: "LYON",
+    manager: "LEBLANC MARC",
+    register: "marchandises" as const,
+  };
+
+  it("version des règles : legacy-compatible-v2", async () => {
+    assert.equal((await computeScore(input())).algorithmVersion, "legacy-compatible-v2");
+  });
+
+  it("absence confirmée au registre des transporteurs : note plafonnée à 65", async () => {
+    const r = await computeScore(strong({ transportRegister: offRegister(), transportRegisterDirectory: [] }));
+    assert.equal(r.globalScore, 65);
+    assert.equal(r.globalLabel, "Correct");
+    assert.deepEqual(r.details.registerCap, { capped: true, maxScore: 65, uncappedScore: 88, successors: [] });
+    assert.ok(r.reliabilityDetails.warnings.includes("sitr_register_cap:65"));
+  });
+
+  it("annuaire du registre non lu (15/10/2026) : la recherche est impossible, pas de plafond, et l'avertissement le dit", async () => {
+    const r = await computeScore(strong({ transportRegister: offRegister() }));
+    assert.equal(r.globalScore, 88);
+    assert.equal(r.details.registerCap.capped, false);
+    assert.equal(r.details.registerCap.successors, null);
+    assert.ok(r.reliabilityDetails.warnings.includes(SITR_DIRECTORY_UNREAD_WARNING));
+    assert.equal(SITR_DIRECTORY_UNREAD_WARNING, "sitr_successor_lookup_failed:no_cap");
+  });
+
+  it("l'entreprise figure au registre sous un autre SIREN (même nom, même lieu) : pas de plafond, l'équipe est alertée", async () => {
+    const r = await computeScore({
+      ...strong({
+        pappers: pappers({ financialScore: 100, raw: { siren: "123456789", nom_entreprise: "DEMENAGEMENTS EXEMPLE" } }),
+        transportRegister: offRegister(),
+        transportRegisterDirectory: [directoryEntry],
+      }),
+      mover: { companyName: "Déménagements Exemple", siren: "123456789", siret: null, city: "Lyon", postalCode: "69007" },
+    });
+    assert.equal(r.globalScore, 88);
+    assert.equal(r.details.registerCap.capped, false);
+    assert.deepEqual(r.details.registerCap.successors?.map((c) => [c.siren, c.reason]), [["900000002", "same_name_same_place"]]);
+    assert.ok(r.reliabilityDetails.warnings.includes("sitr_successor_candidate:900000002"));
+  });
+
+  it("registre des transporteurs illisible : aucune pénalité", async () => {
+    const r = await computeScore(strong({ transportRegister: null }));
+    assert.equal(r.details.registerCap.capped, false);
+    assert.ok(r.reliabilityDetails.warnings.includes("sitr_lookup_failed"));
+    assert.equal(r.globalScore, 100);
+  });
+
+  it("bilan de plus de 24 mois à la date du calcul : financier 50, et la raison", async () => {
+    const old = [{ annee: 2023, date_de_cloture_exercice: "2023-12-31", chiffre_affaires: 900_000, resultat: 80_000, fonds_propres: 300_000 }];
+    const r = await computeScore(
+      input({ registry: registry({ pappers: pappers({ financialScore: 95, financialSource: "pappers_heuristic", finances: old }) }) }),
+    );
+    assert.equal(r.components.financial, 50);
+    assert.equal(r.details.financialFallbackApplied, true);
+    assert.deepEqual(r.details.financialAssessment, { status: "stale", latestClosure: "2023-12-31" });
+    assert.ok(r.reliabilityDetails.warnings.includes("financial_fallback_applied:stale_accounts:2023-12-31"));
+  });
+
+  it("note heuristique recalculée à la date du calcul, sur l'exercice le plus récent", async () => {
+    const finances = [
+      { annee: 2025, date_de_cloture_exercice: "2025-12-31", chiffre_affaires: 1_800_000, resultat: 95_000, fonds_propres: 420_000, tresorerie: 180_000, dettes_financieres: 60_000 },
+      { annee: 2024, date_de_cloture_exercice: "2024-12-31", chiffre_affaires: 1_650_000, resultat: 71_000, fonds_propres: 340_000, tresorerie: 150_000, dettes_financieres: 80_000 },
+    ];
+    const r = await computeScore(input({ registry: registry({ pappers: pappers({ financialScore: 40, financialSource: "pappers_heuristic", finances }) }) }));
+    assert.equal(r.components.financial, 98, "la note en cache (40) ne compte pas : on relit le bilan");
+    assert.deepEqual(r.details.financialAssessment, { status: "scored", latestClosure: "2025-12-31" });
+  });
+});
+
 describe("avec les ports (données de démonstration)", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const fixtures = loadFixtures(join(here, "..", "fixtures"));
@@ -173,12 +252,18 @@ describe("avec les ports (données de démonstration)", () => {
   it("les cinq cas de démonstration donnent le résultat documenté dans le README", async () => {
     assert.equal((await run("demo-confirme")).globalScore, 92);
     const dyn = await run("demo-dynamique");
-    assert.equal(dyn.globalScore, 83);
+    // 83 avant le 14/10/2026 : 17 avis Google plafonnaient à 75 ; plafond progressif, 92,5 → 93.
+    assert.equal(dyn.globalScore, 86);
+    assert.equal(dyn.components.google, 93);
     assert.equal(dyn.reputation.windowMonths, 24);
     assert.equal(dyn.details.financialFallbackApplied, true);
     const fragile = await run("demo-fragile");
     assert.equal(fragile.companyHealth.fragile, true);
     assert.equal(fragile.components.juridical, 0);
+    // Hors registre, annuaire non fourni : recherche impossible, pas de plafond (et 59 ≤ 65 de toute façon).
+    assert.equal(fragile.globalScore, 59);
+    assert.equal(fragile.details.registerCap.capped, false);
+    assert.ok(fragile.reliabilityDetails.warnings.includes("sitr_successor_lookup_failed:no_cap"));
     assert.equal((await run("demo-sans-fiche")).globalScore, null);
     const horsMetier = await run("demo-hors-metier");
     assert.equal(horsMetier.globalScore, null);
