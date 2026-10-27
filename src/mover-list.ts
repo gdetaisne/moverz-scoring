@@ -5,9 +5,14 @@ import { LABEL_MIN_SCORE } from "./label.js";
  * prix fermes, et choisit lui-même ; la liste est classée par prix (ou par avis
  * Google), jamais par le score. Le score FILTRE : il ne classe pas.
  *
- * Mécanique interne, pas une promesse : les places sont réparties en deux
- * catégories, 4 « Confirmés » et 6 « Dynamiques ». Une place qu'une catégorie ne
- * remplit pas revient à l'autre.
+ * Mécanique interne, pas une promesse (16/10/2026) : les partenaires de Moverz
+ * (contrat actif ET fiche en ligne, 26/10/2026) qui couvrent le département de
+ * départ entrent tous, puis les déménageurs notés de la base complètent la liste
+ * jusqu'à 10 lignes (`MOVER_LIST_SIZE`), du mieux noté au moins bien noté,
+ * Confirmés et Dynamiques mêlés. Les deux catégories, 4 « Confirmés » et
+ * 6 « Dynamiques », ne servent plus qu'à repérer un manque par catégorie. Avant le
+ * 16/10 : 4 places Confirmés et 6 Dynamiques, une place non remplie revenant à
+ * l'autre catégorie.
  *
  * C'est le SEUL endroit qui décide si un déménageur est Confirmé, Dynamique ou
  * absent. Une note non fiable n'entre jamais.
@@ -15,7 +20,11 @@ import { LABEL_MIN_SCORE } from "./label.js";
 
 export type MoverListCategory = "confirme" | "dynamique";
 
+/** Ce qu'on attend de chaque catégorie : un manque est un signal de recrutement (« aucun Confirmé ici »). */
 export const MOVER_LIST_SLOTS: Record<MoverListCategory, number> = { confirme: 4, dynamique: 6 };
+
+/** Taille de la liste complétée par les déménageurs de la base (16/10/2026) ; les partenaires y entrent tous. */
+export const MOVER_LIST_SIZE = MOVER_LIST_SLOTS.confirme + MOVER_LIST_SLOTS.dynamique;
 
 /** Confirmé : note fiable ≥ 85 — le seuil du label Excellent. */
 export const MOVER_LIST_CONFIRME_MIN_SCORE = LABEL_MIN_SCORE;

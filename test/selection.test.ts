@@ -5,6 +5,7 @@ import { evaluateLabelStatus, LABEL_MIN_SCORE } from "../src/label.js";
 import { motifPrincipal } from "../src/motif.js";
 import {
   isUnderBon,
+  MOVER_LIST_SIZE,
   MOVER_LIST_SLOTS,
   moverListExclusionReason,
   moverListLabelScore,
@@ -14,7 +15,8 @@ import {
 const reliable = (scoreGlobal: number) => ({ scoreGlobal, isReliable: true });
 
 describe("qui est proposé au client", () => {
-  it("4 places Confirmés, 6 places Dynamiques", () => {
+  it("liste complétée jusqu'à 10 lignes ; 4 Confirmés et 6 Dynamiques attendus pour repérer un manque (16/10/2026)", () => {
+    assert.equal(MOVER_LIST_SIZE, 10);
     assert.deepEqual(MOVER_LIST_SLOTS, { confirme: 4, dynamique: 6 });
   });
 

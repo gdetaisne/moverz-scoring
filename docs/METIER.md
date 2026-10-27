@@ -167,7 +167,14 @@ Le client compare jusqu'à 10 devis, prix fermes, et **choisit lui-même** son d
 - avant toute note : jamais une entreprise fermée, cessée, radiée ou en procédure collective ; depuis le 15/10/2026, la fermeture lue dans l'annuaire de l'État suffit à retirer le Label tout de suite, sans attendre la relecture du registre des entreprises payant (une entreprise cessée fin août restait labellisée) ;
 - jamais une note non fiable ; jamais le libellé « Correct » ou « Fragile » sous les yeux du client.
 
-Mécanique interne du code, qui n'est pas une promesse faite au client : les places de la liste sont réparties en deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84) ; une place qu'une catégorie ne remplit pas revient à l'autre (`src/mover-list.ts`). Quand un département compte plus de déménageurs éligibles que de places, les déménageurs sous contrat avec Moverz passent d'abord, puis la note départage ; l'ordre affiché au client, lui, reste celui du prix ou des avis Google.
+Mécanique interne du code, qui n'est pas une promesse faite au client (`src/mover-list.ts`) :
+
+- depuis le 16/10/2026, les partenaires de Moverz qui couvrent le département de départ entrent **tous** dans la liste ; les déménageurs notés de la base la complètent jusqu'à 10 lignes, du mieux noté au moins bien noté. Pourquoi : avec des places réservées par catégorie, un partenaire pouvait rester hors de la liste ;
+- un partenaire, c'est un contrat actif chez Moverz **et** une fiche en ligne (26/10/2026). Une fiche en ligne sans contrat, héritée du lancement, est un déménageur de la base : elle n'a pas le pas sur les autres et entre par sa note ;
+- les deux catégories, 4 « Confirmés » (note fiable de 85 et plus, le seuil du label Excellent) et 6 « Dynamiques » (de 76 à 84), ne servent plus qu'à repérer un manque (« aucun Confirmé dans ce département »), qui guide le recrutement. Avant le 16/10, elles se partageaient les places, une place non remplie revenant à l'autre catégorie ;
+- l'ordre affiché au client, lui, reste celui du prix ou des avis Google.
+
+Exemple fictif : un département compte 2 partenaires (notés 78 et 90) et 15 déménageurs éligibles de la base. La liste montre les 2 partenaires, puis les 8 meilleures notes de la base, soit 10 lignes ; le client les voit classées par prix.
 
 Le label Excellent demande en plus : être au registre des transporteurs, et être joignable.
 
